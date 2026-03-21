@@ -31,7 +31,7 @@ public class SecurityConfig {
                         // PUBLIC
                         .requestMatchers("/auth/**").permitAll()
                         // 나머지
-                        .anyRequest().authenticated() // 현재는 JWT 인증 필요
+                        .anyRequest().permitAll()
                 )
 
                 /**

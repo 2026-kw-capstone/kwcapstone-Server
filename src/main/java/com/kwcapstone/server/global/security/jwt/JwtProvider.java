@@ -65,6 +65,10 @@ public class JwtProvider {
         return parseClaims(token).get("email", String.class);
     }
 
+    public Long getRefreshExpireMs() {
+        return refreshExpireMs;
+    }
+
     // Access Token 검증
     public boolean validateAccessToken(String token) {
         try {
