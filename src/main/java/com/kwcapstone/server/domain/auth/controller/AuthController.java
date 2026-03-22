@@ -3,6 +3,7 @@ package com.kwcapstone.server.domain.auth.controller;
 import com.kwcapstone.server.domain.auth.dto.request.AuthLoginReqDTO;
 import com.kwcapstone.server.domain.auth.dto.request.AuthSignUpReqDTO;
 import com.kwcapstone.server.domain.auth.dto.response.AuthLoginResDTO;
+import com.kwcapstone.server.domain.auth.dto.response.AuthReissueResDTO;
 import com.kwcapstone.server.domain.auth.dto.response.AuthSignUpResDTO;
 import com.kwcapstone.server.domain.auth.service.AuthService;
 import com.kwcapstone.server.global.apiPayload.response.ApiResponse;
@@ -35,5 +36,23 @@ public class AuthController {
         AuthLoginResDTO result = authService.login(request);
 
         return ApiResponse.onSuccess(result, SuccessCode.OK);
+    }
+
+    // Access Token 재발급
+    @PostMapping("/reissue")
+    public ApiResponse<AuthReissueResDTO> reissue(
+            @RequestHeader("Authorization") String refreshToken
+    ) {
+        AuthReissueResDTO result = authService.reissue(refreshToken);
+
+        return ApiResponse.onSuccess(result, SuccessCode.OK);
+    }
+
+    // 로그아웃
+    @PostMapping("/logout")
+    public ApiResponse<Void> logout() {
+        authService.logout();
+
+        return ApiResponse.onSuccess(null, SuccessCode.OK);
     }
 }

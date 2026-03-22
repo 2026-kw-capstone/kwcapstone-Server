@@ -4,11 +4,13 @@ import com.kwcapstone.server.domain.auth.converter.AuthConverter;
 import com.kwcapstone.server.domain.auth.dto.request.AuthLoginReqDTO;
 import com.kwcapstone.server.domain.auth.dto.request.AuthSignUpReqDTO;
 import com.kwcapstone.server.domain.auth.dto.response.AuthLoginResDTO;
+import com.kwcapstone.server.domain.auth.dto.response.AuthReissueResDTO;
 import com.kwcapstone.server.domain.auth.dto.response.AuthSignUpResDTO;
 import com.kwcapstone.server.domain.member.entity.Member;
 import com.kwcapstone.server.domain.member.repository.MemberRepository;
 import com.kwcapstone.server.global.apiPayload.exception.CustomException;
 import com.kwcapstone.server.global.apiPayload.response.ErrorCode;
+import com.kwcapstone.server.global.security.SecurityUtil;
 import com.kwcapstone.server.global.security.jwt.JwtProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -73,5 +75,45 @@ public class AuthServiceImpl implements AuthService {
         );
 
         return AuthConverter.toLoginResDTO(accessToken, member);
+    }
+
+    @Override
+    public AuthReissueResDTO reissue(String refreshToken) {
+        refreshToken = jwtProvider.resolveToken(refreshToken);
+
+        // Refresh Token 검증
+        if (!jwtProvider.validateRefreshToken(refreshToken)) {
+            throw new CustomException(ErrorCode.UNAUTHORIZED);
+        }
+
+        Long memberId = jwtProvider.getMemberId(refreshToken);
+
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND));
+
+        // DB Refresh Token 검증
+        if (!refreshToken.equals(member.getRefreshToken())) {
+            throw new CustomException(ErrorCode.UNAUTHORIZED);
+        }
+
+        // DB Refresh Token 만료 검사
+        if (member.getRefreshTokenExpiredAt().isBefore(LocalDateTime.now())) {
+            throw new CustomException(ErrorCode.UNAUTHORIZED);
+        }
+
+        // 새로운 Access Token 발급
+        String newAccessToken = jwtProvider.createAccessToken(member.getId(), member.getEmail());
+
+        return new AuthReissueResDTO(newAccessToken);
+    }
+
+    @Override
+    public void logout() {
+        Long memberId = SecurityUtil.getCurrentMemberId();
+
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND));
+
+        member.clearRefreshToken();
     }
 }

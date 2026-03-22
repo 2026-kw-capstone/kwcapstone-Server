@@ -29,7 +29,7 @@ public class JwtProvider {
 
     // 로그인 성공 시 Access Token 생성
     public String createAccessToken(Long memberId, String email) {
-        Long now = System.currentTimeMillis(); // 현재 시간
+        long now = System.currentTimeMillis(); // 현재 시간
 
         return Jwts.builder() // JWT 생성 시작
                 .claim("memberId", memberId) // JWT payload에 memberId 저장
@@ -43,7 +43,7 @@ public class JwtProvider {
 
     // Refresh Token 생성
     public String createRefreshToken(Long memberId, String email) {
-        Long now = System.currentTimeMillis();
+        long now = System.currentTimeMillis();
 
         return Jwts.builder()
                 .claim("memberId", memberId)
@@ -79,6 +79,27 @@ public class JwtProvider {
         } catch (JwtException e) {
             return false;
         }
+    }
+
+    // Refresh Token 검증
+    public boolean validateRefreshToken(String token) {
+        try {
+            Claims claims = parseClaims(token);
+
+            // Refresh Token인지 확인
+            return "refresh".equals(claims.get("type"));
+        } catch (JwtException e) {
+            return false;
+        }
+    }
+
+    // "Bearer " 제거 후 JWT 토큰 반환
+    public String resolveToken(String token) {
+        if (token != null && token.startsWith("Bearer ")) {
+            return token.substring(7);
+        }
+
+        return token;
     }
 
     private Claims parseClaims(String token) {
