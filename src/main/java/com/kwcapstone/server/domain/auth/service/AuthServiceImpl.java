@@ -4,7 +4,6 @@ import com.kwcapstone.server.domain.auth.converter.AuthConverter;
 import com.kwcapstone.server.domain.auth.dto.request.AuthLoginReqDTO;
 import com.kwcapstone.server.domain.auth.dto.request.AuthSignUpReqDTO;
 import com.kwcapstone.server.domain.auth.dto.response.AuthLoginResDTO;
-import com.kwcapstone.server.domain.auth.dto.response.AuthReissueResDTO;
 import com.kwcapstone.server.domain.auth.dto.response.AuthSignUpResDTO;
 import com.kwcapstone.server.domain.member.entity.Member;
 import com.kwcapstone.server.domain.member.repository.MemberRepository;
@@ -52,7 +51,7 @@ public class AuthServiceImpl implements AuthService {
 
     // 로그인
     @Override
-    public AuthLoginResDTO login(AuthLoginReqDTO request) {
+    public LoginTokens login(AuthLoginReqDTO request) {
         // 이메일로 회원 조회
         Member member = memberRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new CustomException(ErrorCode.UNAUTHORIZED)); // TODO: 에러코드 구체화하기
@@ -62,24 +61,33 @@ public class AuthServiceImpl implements AuthService {
             throw new CustomException(ErrorCode.UNAUTHORIZED); // TODO: 에러코드 구체화하기
         }
 
-        // Access Token 생성
         String accessToken = jwtProvider.createAccessToken(member.getId(), member.getEmail());
-
-        // Refresh Token 생성
         String refreshToken = jwtProvider.createRefreshToken(member.getId(), member.getEmail());
 
-        // Refresh Token DB 저장
-        member.updateRefreshToken(
-                refreshToken,
-                LocalDateTime.now().plusSeconds(jwtProvider.getRefreshExpireMs() / 1000)
-        );
+        // DB에 저장할 Refresh Token 만료 시각 계산
+        LocalDateTime refreshExpiredAt = LocalDateTime.now().plusSeconds(jwtProvider.getRefreshExpireMs() / 1000);
 
-        return AuthConverter.toLoginResDTO(accessToken, member);
+        // Refresh Token DB 저장
+        member.updateRefreshToken(refreshToken, refreshExpiredAt);
+
+        // 쿠키 만료 시간용 값 계산
+        long refreshMaxAgeSeconds = jwtProvider.getRefreshExpireMs() / 1000;
+
+        AuthLoginResDTO body = AuthConverter.toLoginResDTO(accessToken, member);
+
+        return new LoginTokens(body, refreshToken, refreshMaxAgeSeconds);
     }
 
+    /**
+     * Refresh Token을 받아
+     * 새로운 Access Token, 새로운 Refresh Token을 발급하는 메서드
+     * 현재 구조는 Refresh Token Rotation까지 포함된 구조
+     */
     @Override
-    public AuthReissueResDTO reissue(String refreshToken) {
-        refreshToken = jwtProvider.resolveToken(refreshToken);
+    public ReissueTokens reissue(String refreshToken) {
+        if (refreshToken == null) {
+            throw new CustomException(ErrorCode.UNAUTHORIZED);
+        }
 
         // Refresh Token 검증
         if (!jwtProvider.validateRefreshToken(refreshToken)) {
@@ -91,7 +99,7 @@ public class AuthServiceImpl implements AuthService {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND));
 
-        // DB Refresh Token 검증
+        // DB Refresh Token과 비교
         if (!refreshToken.equals(member.getRefreshToken())) {
             throw new CustomException(ErrorCode.UNAUTHORIZED);
         }
@@ -101,10 +109,22 @@ public class AuthServiceImpl implements AuthService {
             throw new CustomException(ErrorCode.UNAUTHORIZED);
         }
 
-        // 새로운 Access Token 발급
+        // 새로운 Access Token, Refresh Token 발급 (Refresh Token Rotation)
         String newAccessToken = jwtProvider.createAccessToken(member.getId(), member.getEmail());
+        String newRefreshToken = jwtProvider.createRefreshToken(member.getId(), member.getEmail());
 
-        return new AuthReissueResDTO(newAccessToken);
+        LocalDateTime newExpiredAt = LocalDateTime.now().plusSeconds(jwtProvider.getRefreshExpireMs() / 1000);
+
+        // DB에 현재 저장된 Refresh Token이 기존 Refresh Token과 같을 때만 교체 (새 Refresh Token으로 교체)
+        int updated = memberRepository.rotateRefreshToken(memberId, refreshToken, newRefreshToken, newExpiredAt);
+
+        if (updated == 0) {
+            throw new CustomException(ErrorCode.UNAUTHORIZED);
+        }
+
+        long refreshMaxAgeSeconds = jwtProvider.getRefreshExpireMs() / 1000;
+
+        return new ReissueTokens(newAccessToken, newRefreshToken, refreshMaxAgeSeconds);
     }
 
     @Override
