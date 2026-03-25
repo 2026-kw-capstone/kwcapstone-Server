@@ -11,6 +11,9 @@ public enum ErrorCode implements BaseCode {
     INVALID_REQUEST(HttpStatus.BAD_REQUEST, "COMMON400", "잘못된 요청입니다."),
     VALIDATION_ERROR(HttpStatus.BAD_REQUEST, "COMMON400_1", "입력값이 올바르지 않습니다."),
 
+    EMPTY_FILE(HttpStatus.BAD_REQUEST, "FILE400_1", "비어 있는 파일은 업로드할 수 없습니다."),
+    INVALID_AUDIO_FILE(HttpStatus.BAD_REQUEST, "FILE400_2", "webm 오디오 파일만 업로드할 수 있습니다."),
+
     UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "COMMON401", "인증되지 않은 요청입니다."),
     FORBIDDEN(HttpStatus.FORBIDDEN, "COMMON403", "접근이 금지되었습니다."),
 
@@ -20,7 +23,8 @@ public enum ErrorCode implements BaseCode {
     DUPLICATE_RESOURCE(HttpStatus.CONFLICT, "COMMON409_1", "이미 존재하는 데이터입니다."),
 
     // COMMON 5XX (서버 오류)
-    INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "COMMON500", "서버 내부 오류가 발생했습니다.")
+    INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "COMMON500", "서버 내부 오류가 발생했습니다."),
+    FILE_UPLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "FILE500", "파일 업로드에 실패했습니다.")
     ;
 
     private final HttpStatus httpStatus;
