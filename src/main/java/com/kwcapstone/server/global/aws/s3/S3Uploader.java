@@ -18,6 +18,8 @@ import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignReques
 
 import java.io.IOException;
 import java.time.Duration;
+import java.util.Locale;
+import java.util.Set;
 
 @Slf4j
 @Component
@@ -35,29 +37,49 @@ public class S3Uploader {
     @Value("${cloud.aws.s3.presigned-expire-seconds}")
     private long presignedExpireSeconds;
 
+    private static final Set<String> ALLOWED_CONTENT_TYPES = Set.of(
+            "audio/webm",
+            "video/webm",
+            "audio/mp4",
+            "audio/m4a",
+            "audio/mpeg",
+            "audio/mp3",
+            "audio/x-m4a"
+    );
+
+    private static final Set<String> ALLOWED_EXTENSIONS = Set.of(
+            ".webm",
+            ".mp4",
+            ".m4a",
+            ".mp3"
+    );
+
     // S3 업로드 후 public URL이 아니라 object key를 반환
     public String uploadVoiceFile(Long memberId, String clientRequestId, MultipartFile file) {
         // 파일 검증
         validateVoiceFile(file);
 
+        // Content-Type 정규화, ex) audio/webm;codecs=opus -> audio/webm
+        String normalizedContentType = normalizeContentType(file.getContentType());
         // 확장자 추출
-        String extension = extractExtension(file); // ex) abc.webm -> .webm
+        String extension = resolveExtension(file, normalizedContentType); // ex) abc.webm -> .webm
         // S3 key(=S3 파일 경로) 생성
         String key = generateVoiceKey(memberId, clientRequestId, extension);
 
-        log.info("S3 upload start. bucket={}, key={}, originalFilename={}, contentType={}, size={}",
-                bucket, key, file.getOriginalFilename(), file.getContentType(), file.getSize());
+        log.info("S3 upload start. bucket={}, key={}, originalFilename={}, contentType={}, normalizedContentType={}, size={}",
+                bucket, key, file.getOriginalFilename(), file.getContentType(), normalizedContentType, file.getSize());
 
         try {
             // 업로드 요청 객체 생성
             PutObjectRequest putObjectRequest = PutObjectRequest.builder()
                     .bucket(bucket)
                     .key(key)
-                    .contentType(file.getContentType())
+                    .contentType(normalizedContentType != null ? normalizedContentType : file.getContentType())
                     .build();
 
             // S3 업로드
-            s3Client.putObject(putObjectRequest,
+            s3Client.putObject(
+                    putObjectRequest,
                     RequestBody.fromInputStream(file.getInputStream(), file.getSize())
             );
 
@@ -119,26 +141,60 @@ public class S3Uploader {
             throw new CustomException(ErrorCode.EMPTY_FILE);
         }
 
-        String contentType = file.getContentType();
-        String originalFilename = file.getOriginalFilename();
+        // Content-Type 정규화
+        String normalizedContentType = normalizeContentType(file.getContentType());
+        // 확장자 추출
+        String extension = extractExtension(file.getOriginalFilename());
 
-        boolean webmContentType = contentType != null && contentType.equalsIgnoreCase("audio/webm");
-        boolean webmFileName = originalFilename != null && originalFilename.toLowerCase().endsWith(".webm");
+        boolean allowedContentType = normalizedContentType != null && ALLOWED_CONTENT_TYPES.contains(normalizedContentType);
+        boolean allowedExtension = extension != null && ALLOWED_EXTENSIONS.contains(extension);
 
-        if (!webmContentType && !webmFileName) {
+        if (!allowedContentType && !allowedExtension) {
             throw new CustomException(ErrorCode.INVALID_AUDIO_FILE);
         }
     }
 
-    // 확장자 추출 메서드
-    private String extractExtension(MultipartFile file) {
-        String originalFilename = file.getOriginalFilename();
-
-        if (originalFilename != null && originalFilename.contains(".")) {
-            return originalFilename.substring(originalFilename.lastIndexOf("."));
+    private String normalizeContentType(String contentType) {
+        if (contentType == null || contentType.isBlank()) {
+            return null;
         }
 
-        return ".webm";
+        return contentType.split(";")[0].trim().toLowerCase(Locale.ROOT);
+    }
+
+    // 브라우저가 보내는 Content-Type을 기준으로 S3에 저장할 파일 확장자를 결정하는 메서드
+    private String resolveExtension(MultipartFile file, String normalizedContentType) {
+        // 1순위: contentType 기준으로 결정
+        if (normalizedContentType != null) {
+            return switch (normalizedContentType) {
+                case "audio/webm", "video/webm" -> ".webm";
+                case "audio/mp4", "audio/m4a", "audio/x-m4a" -> ".m4a";
+                case "audio/mpeg", "audio/mp3" -> ".mp3";
+                default -> resolveExtensionFromFilename(file.getOriginalFilename());
+            };
+        }
+
+        // 2순위: 파일명 확장자
+        return resolveExtensionFromFilename(file.getOriginalFilename());
+    }
+
+    private String resolveExtensionFromFilename(String originalFilename) {
+        String extension = extractExtension(originalFilename);
+
+        if (extension != null && ALLOWED_EXTENSIONS.contains(extension)) {
+            return extension;
+        }
+
+        throw new CustomException(ErrorCode.INVALID_AUDIO_FILE);
+    }
+
+    // 확장자 추출 메서드
+    private String extractExtension(String originalFilename) {
+        if (originalFilename == null || !originalFilename.contains(".")) {
+            return null;
+        }
+
+        return originalFilename.substring(originalFilename.lastIndexOf(".")).toLowerCase(Locale.ROOT);
     }
 
     // S3 key 생성 메서드
