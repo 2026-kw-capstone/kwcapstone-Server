@@ -3,6 +3,7 @@ package com.kwcapstone.server.global.aws.s3;
 import com.kwcapstone.server.global.apiPayload.exception.CustomException;
 import com.kwcapstone.server.global.apiPayload.response.ErrorCode;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
@@ -18,6 +19,7 @@ import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignReques
 import java.io.IOException;
 import java.time.Duration;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class S3Uploader {
@@ -43,6 +45,9 @@ public class S3Uploader {
         // S3 key(=S3 파일 경로) 생성
         String key = generateVoiceKey(memberId, clientRequestId, extension);
 
+        log.info("S3 upload start. bucket={}, key={}, originalFilename={}, contentType={}, size={}",
+                bucket, key, file.getOriginalFilename(), file.getContentType(), file.getSize());
+
         try {
             // 업로드 요청 객체 생성
             PutObjectRequest putObjectRequest = PutObjectRequest.builder()
@@ -56,8 +61,29 @@ public class S3Uploader {
                     RequestBody.fromInputStream(file.getInputStream(), file.getSize())
             );
 
+            log.info("S3 upload success. bucket={}, key={}", bucket, key);
+
             return key;
-        } catch (IOException | S3Exception | SdkClientException e) {
+        } catch (S3Exception e) {
+            log.error("S3Exception during upload. bucket={}, key={}, statusCode={}, errorCode={}, errorMessage={}",
+                    bucket,
+                    key,
+                    e.statusCode(),
+                    e.awsErrorDetails() != null ? e.awsErrorDetails().errorCode() : null,
+                    e.awsErrorDetails() != null ? e.awsErrorDetails().errorMessage() : e.getMessage(),
+                    e
+            );
+
+            throw new CustomException(ErrorCode.FILE_UPLOAD_FAILED);
+        } catch (SdkClientException e) {
+            log.error("SdkClientException during upload. bucket={}, key={}, message={}",
+                    bucket, key, e.getMessage(), e);
+
+            throw new CustomException(ErrorCode.FILE_UPLOAD_FAILED);
+        } catch (IOException e) {
+            log.error("IOException during upload. bucket={}, key={}, message={}",
+                    bucket, key, e.getMessage(), e);
+
             throw new CustomException(ErrorCode.FILE_UPLOAD_FAILED);
         }
     }
@@ -80,6 +106,9 @@ public class S3Uploader {
                     .url()
                     .toString();
         } catch (S3Exception | SdkClientException e) {
+            log.error("Failed to generate presigned URL. bucket={}, key={}, message={}",
+                    bucket, key, e.getMessage(), e);
+
             throw new CustomException(ErrorCode.FILE_UPLOAD_FAILED);
         }
     }

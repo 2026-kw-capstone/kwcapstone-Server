@@ -6,6 +6,7 @@ import com.kwcapstone.server.domain.auth.dto.request.AuthSignUpReqDTO;
 import com.kwcapstone.server.domain.auth.dto.response.AuthLoginResDTO;
 import com.kwcapstone.server.domain.auth.dto.response.AuthSignUpResDTO;
 import com.kwcapstone.server.domain.member.entity.Member;
+import com.kwcapstone.server.domain.member.exception.code.MemberErrorCode;
 import com.kwcapstone.server.domain.member.repository.MemberRepository;
 import com.kwcapstone.server.global.apiPayload.exception.CustomException;
 import com.kwcapstone.server.global.apiPayload.response.ErrorCode;
@@ -97,7 +98,7 @@ public class AuthServiceImpl implements AuthService {
         Long memberId = jwtProvider.getMemberId(refreshToken);
 
         Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND));
+                .orElseThrow(() -> new CustomException(MemberErrorCode.MEMBER_NOT_FOUND));
 
         // DB Refresh Token과 비교
         if (!refreshToken.equals(member.getRefreshToken())) {
@@ -132,7 +133,7 @@ public class AuthServiceImpl implements AuthService {
         Long memberId = SecurityUtil.getCurrentMemberId();
 
         Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND));
+                .orElseThrow(() -> new CustomException(MemberErrorCode.MEMBER_NOT_FOUND));
 
         member.clearRefreshToken();
     }
