@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface MessageRepository extends JpaRepository<Message, Long> {
@@ -30,4 +31,7 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
             String clientRequestId,
             MessageRole role
     );
+
+    // 특정 채팅방의 전체 메시지를 오래된 순으로 조회
+    List<Message> findAllByConversationIdOrderByCreatedAtAscIdAsc(Long conversationId);
 }

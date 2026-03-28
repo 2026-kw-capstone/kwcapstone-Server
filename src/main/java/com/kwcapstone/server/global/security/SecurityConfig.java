@@ -65,6 +65,7 @@ public class SecurityConfig {
 
                         // PROTECTED
                         .requestMatchers("/api/messages/**").authenticated()
+                        .requestMatchers("/api/conversations/**").authenticated()
 
                         // 나머지
                         .anyRequest().permitAll()
