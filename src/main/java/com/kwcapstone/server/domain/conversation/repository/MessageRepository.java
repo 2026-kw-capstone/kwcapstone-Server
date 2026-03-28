@@ -3,6 +3,7 @@ package com.kwcapstone.server.domain.conversation.repository;
 import com.kwcapstone.server.domain.conversation.entity.Message;
 import com.kwcapstone.server.domain.conversation.enums.MessageRole;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -34,4 +35,11 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
 
     // 특정 채팅방의 전체 메시지를 오래된 순으로 조회
     List<Message> findAllByConversationIdOrderByCreatedAtAscIdAsc(Long conversationId);
+
+    @Modifying
+    @Query("""
+        delete from Message m
+        where m.conversation.id = :conversationId
+    """)
+    void deleteAllByConversationId(@Param("conversationId") Long conversationId);
 }

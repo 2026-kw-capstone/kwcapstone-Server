@@ -2,6 +2,7 @@ package com.kwcapstone.server.domain.conversation.converter;
 
 import com.kwcapstone.server.domain.conversation.dto.response.ConversationDetailResDTO;
 import com.kwcapstone.server.domain.conversation.dto.response.ConversationListItemResDTO;
+import com.kwcapstone.server.domain.conversation.dto.response.ConversationTitleUpdateResDTO;
 import com.kwcapstone.server.domain.conversation.dto.response.MessageSendResDTO;
 import com.kwcapstone.server.domain.conversation.entity.Conversation;
 import com.kwcapstone.server.domain.conversation.entity.Message;
@@ -91,6 +92,14 @@ public class ConversationConverter {
                         feedback.getContent(),
                         feedback.getCreatedAt()
                 )
+        );
+    }
+
+    // 엔티티 -> 대화 이름 수정 응답 DTO
+    public static ConversationTitleUpdateResDTO toConversationTitleUpdateResDTO(Conversation conversation) {
+        return new ConversationTitleUpdateResDTO(
+                conversation.getId(),
+                conversation.getTitle()
         );
     }
 }
