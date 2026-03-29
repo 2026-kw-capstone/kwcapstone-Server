@@ -11,6 +11,11 @@ spring:
     username: ${DB_USER}
     password: ${DB_PW}
 
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 20MB
+
   jpa:
     database: mysql
     database-platform: org.hibernate.dialect.MySQLDialect
@@ -26,6 +31,18 @@ jwt:
   secret: ${JWT_SECRET}
   access-expire: ${JWT_ACCESS_TOKEN_EXPIRE_MS}
   refresh-expire: ${JWT_REFRESH_TOKEN_EXPIRE_MS}
+
+cloud:
+  aws:
+    credentials:
+      access-key: ${AWS_ACCESS_KEY_ID}
+      secret-key: ${AWS_SECRET_ACCESS_KEY}
+    s3:
+      bucket: ${AWS_S3_BUCKET}
+      audio-root-path: audio
+      presigned-expire-seconds: 600
+    region:
+      static: ${AWS_REGION}
 
 logging:
   level:

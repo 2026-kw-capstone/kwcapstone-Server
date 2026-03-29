@@ -9,11 +9,14 @@ import lombok.Getter;
 @Getter
 @Builder
 @AllArgsConstructor
-@JsonPropertyOrder({"isSuccess", "code", "message", "result"})
+@JsonPropertyOrder({"isSuccess", "code", "message", "clientRequestId", "result"})
 public class ApiResponse<T> {
     private final Boolean isSuccess;
     private final String code;
     private final String message;
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private final String clientRequestId;
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private final T result;
@@ -23,6 +26,17 @@ public class ApiResponse<T> {
                 .isSuccess(true)
                 .code(code.getCode())
                 .message(code.getMessage())
+                .clientRequestId(null)
+                .result(result)
+                .build();
+    }
+
+    public static <T> ApiResponse<T> onSuccess(T result, BaseCode code, String clientRequestId) {
+        return ApiResponse.<T>builder()
+                .isSuccess(true)
+                .code(code.getCode())
+                .message(code.getMessage())
+                .clientRequestId(clientRequestId)
                 .result(result)
                 .build();
     }
@@ -32,6 +46,7 @@ public class ApiResponse<T> {
                 .isSuccess(false)
                 .code(code.getCode())
                 .message(code.getMessage())
+                .clientRequestId(null)
                 .result(data)
                 .build();
     }
