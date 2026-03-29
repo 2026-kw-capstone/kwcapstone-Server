@@ -18,8 +18,8 @@ import com.kwcapstone.server.domain.member.exception.code.MemberErrorCode;
 import com.kwcapstone.server.domain.member.repository.MemberRepository;
 import com.kwcapstone.server.global.apiPayload.exception.CustomException;
 import com.kwcapstone.server.global.apiPayload.response.ErrorCode;
-import com.kwcapstone.server.global.aws.s3.S3Uploader;
 import com.kwcapstone.server.global.security.SecurityUtil;
+import com.kwcapstone.server.global.storage.audio.AudioStorageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,11 +31,13 @@ import java.time.LocalDateTime;
 @RequiredArgsConstructor
 @Transactional
 public class ConversationMessageServiceImpl implements ConversationMessageService {
+    private static final String FREE_CONVERSATION_AUDIO_PREFIX = "free-conversation";
+
     private final ConversationRepository conversationRepository;
     private final MessageRepository messageRepository;
     private final MessageFeedbackRepository messageFeedbackRepository;
     private final MemberRepository memberRepository;
-    private final S3Uploader s3Uploader;
+    private final AudioStorageService audioStorageService;
 
     // 텍스트 메시지 전송 API 로직
     @Override
@@ -126,8 +128,8 @@ public class ConversationMessageServiceImpl implements ConversationMessageServic
         }
 
         // S3 업로드
-        String voiceKey = s3Uploader.uploadVoiceFile(
-                memberId,
+        String voiceKey = audioStorageService.upload(
+                buildConversationAudioKeyPrefix(memberId),
                 request.getClientRequestId(),
                 request.getVoiceFile()
         );
@@ -264,5 +266,9 @@ public class ConversationMessageServiceImpl implements ConversationMessageServic
         return normalized.length() <= maxLength
                 ? normalized
                 : normalized.substring(0, maxLength);
+    }
+
+    private String buildConversationAudioKeyPrefix(Long memberId) {
+        return FREE_CONVERSATION_AUDIO_PREFIX + "/" + memberId;
     }
 }

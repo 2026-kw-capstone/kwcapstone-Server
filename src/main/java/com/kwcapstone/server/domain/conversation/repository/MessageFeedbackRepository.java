@@ -13,7 +13,7 @@ public interface MessageFeedbackRepository extends JpaRepository<MessageFeedback
     Optional<MessageFeedback> findByMessageId(Long messageId);
     List<MessageFeedback> findAllByMessageConversationId(Long conversationId);
 
-    @Modifying
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("""
         delete from MessageFeedback mf
         where mf.message.conversation.id = :conversationId

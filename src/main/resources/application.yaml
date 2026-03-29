@@ -39,7 +39,7 @@ cloud:
       secret-key: ${AWS_SECRET_ACCESS_KEY}
     s3:
       bucket: ${AWS_S3_BUCKET}
-      voice-path: voice
+      audio-root-path: audio
       presigned-expire-seconds: 600
     region:
       static: ${AWS_REGION}

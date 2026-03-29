@@ -36,7 +36,16 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
     // 특정 채팅방의 전체 메시지를 오래된 순으로 조회
     List<Message> findAllByConversationIdOrderByCreatedAtAscIdAsc(Long conversationId);
 
-    @Modifying
+    @Query("""
+        select distinct m.messageVoiceKey
+        from Message m
+        where m.conversation.id = :conversationId
+            and m.messageVoiceKey is not null
+            and m.messageVoiceKey <> ''
+    """)
+    List<String> findDistinctVoiceKeysByConversationId(@Param("conversationId") Long conversationId);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("""
         delete from Message m
         where m.conversation.id = :conversationId
