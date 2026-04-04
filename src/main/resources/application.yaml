@@ -44,6 +44,11 @@ cloud:
     region:
       static: ${AWS_REGION}
 
+ai:
+  server:
+    base-url: ${AI_SERVER_BASE_URL}
+    token: ${AI_SERVER_TOKEN}
+
 logging:
   level:
     root: INFO
