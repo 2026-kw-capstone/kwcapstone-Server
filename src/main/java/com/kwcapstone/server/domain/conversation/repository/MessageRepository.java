@@ -2,11 +2,13 @@ package com.kwcapstone.server.domain.conversation.repository;
 
 import com.kwcapstone.server.domain.conversation.entity.Message;
 import com.kwcapstone.server.domain.conversation.enums.MessageRole;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -51,4 +53,10 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
         where m.conversation.id = :conversationId
     """)
     void deleteAllByConversationId(@Param("conversationId") Long conversationId);
+
+    List<Message> findByConversationIdAndRoleIn(
+            Long conversationId,
+            Collection<MessageRole> roles,
+            Pageable pageable
+    );
 }

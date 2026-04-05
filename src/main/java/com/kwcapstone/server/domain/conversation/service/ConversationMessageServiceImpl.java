@@ -1,5 +1,8 @@
 package com.kwcapstone.server.domain.conversation.service;
 
+import com.kwcapstone.server.domain.conversation.client.FreeTalkAiClient;
+import com.kwcapstone.server.domain.conversation.client.dto.request.FreeTalkAiReqDTO;
+import com.kwcapstone.server.domain.conversation.client.dto.response.FreeTalkAiResDTO;
 import com.kwcapstone.server.domain.conversation.converter.ConversationConverter;
 import com.kwcapstone.server.domain.conversation.dto.request.TextMessageSendReqDTO;
 import com.kwcapstone.server.domain.conversation.dto.request.VoiceMessageSendReqDTO;
@@ -21,23 +24,30 @@ import com.kwcapstone.server.global.apiPayload.response.ErrorCode;
 import com.kwcapstone.server.global.security.SecurityUtil;
 import com.kwcapstone.server.global.storage.audio.AudioStorageService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 @Transactional
 public class ConversationMessageServiceImpl implements ConversationMessageService {
     private static final String FREE_CONVERSATION_AUDIO_PREFIX = "free-conversation";
+    private static final int CHAT_HISTORY_LIMIT = 6;
 
     private final ConversationRepository conversationRepository;
     private final MessageRepository messageRepository;
     private final MessageFeedbackRepository messageFeedbackRepository;
     private final MemberRepository memberRepository;
     private final AudioStorageService audioStorageService;
+    private final FreeTalkAiClient freeTalkAiClient;
 
     // 텍스트 메시지 전송 API 로직
     @Override
@@ -55,6 +65,12 @@ public class ConversationMessageServiceImpl implements ConversationMessageServic
 
         // 메시지 내용
         String userContent = request.getContent().trim();
+
+        // 이전 대화 기록
+        List<FreeTalkAiReqDTO.ChatHistoryItem> chatHistory = buildChatHistory(request.getConversationId());
+
+        // AI 서버 응답
+        FreeTalkAiResDTO aiResult = freeTalkAiClient.sendText(new FreeTalkAiReqDTO(userContent, chatHistory));
 
         /**
          * 채팅방 생성 또는 조회
@@ -79,12 +95,6 @@ public class ConversationMessageServiceImpl implements ConversationMessageServic
                         .build()
         );
 
-        // TODO: FastAPI 연동 후 AI 서버 응답으로 대체
-        // ~
-
-        String aiResponse = "임시 AI 응답";
-        String feedbackContent = "임시 피드백";
-
         // AI 메시지 생성
         Message aiMessage = messageRepository.save(
                 Message.builder()
@@ -93,7 +103,7 @@ public class ConversationMessageServiceImpl implements ConversationMessageServic
                         .role(MessageRole.AI)
                         .inputType(MessageInputType.TEXT)
                         .messageVoiceKey(null)
-                        .content(aiResponse)
+                        .content(resolveAiReply(aiResult))
                         .build()
         );
 
@@ -101,7 +111,7 @@ public class ConversationMessageServiceImpl implements ConversationMessageServic
         MessageFeedback feedback = messageFeedbackRepository.save(
                 MessageFeedback.builder()
                         .message(userMessage)
-                        .content(feedbackContent)
+                        .content(resolveAiFeedback(aiResult))
                         .build()
         );
 
@@ -227,6 +237,43 @@ public class ConversationMessageServiceImpl implements ConversationMessageServic
         );
     }
 
+    /**
+     * 최근 N개의 USER/AI 메시지만 문맥으로 사용
+     * 피드백 제외
+     * 현재 요청은 아직 저장 전이므로 제외
+     */
+    private List<FreeTalkAiReqDTO.ChatHistoryItem> buildChatHistory(Long conversationId) {
+        if (conversationId == null) {
+            return List.of();
+        }
+
+        // DB에서 최근 N개의 메시지를 어떤 기준으로 가져올지 정의하는 부분
+        Pageable pageable = PageRequest.of(
+                0, // 페이지는 0부터 시작
+                CHAT_HISTORY_LIMIT,
+                Sort.by(
+                        Sort.Order.desc("createdAt"),
+                        Sort.Order.desc("id")
+                )
+        );
+
+        List<Message> recentMessages = messageRepository.findByConversationIdAndRoleIn(
+                conversationId,
+                List.of(MessageRole.USER, MessageRole.AI),
+                pageable
+        );
+
+        List<Message> orderedMessages = new ArrayList<>(recentMessages); // 보험
+        java.util.Collections.reverse(orderedMessages); // 시간 순서대로 정렬
+
+        return orderedMessages.stream()
+                .map(message -> new FreeTalkAiReqDTO.ChatHistoryItem(
+                        message.getRole() == MessageRole.USER ? "user" : "assistant",
+                        message.getContent()
+                ))
+                .toList();
+    }
+
     private Conversation getOrCreateConversation(Long memberId, Long conversationId, String title) {
         // 새 대화(채팅방) 생성
         if (conversationId == null) {
@@ -270,5 +317,21 @@ public class ConversationMessageServiceImpl implements ConversationMessageServic
 
     private String buildConversationAudioKeyPrefix(Long memberId) {
         return FREE_CONVERSATION_AUDIO_PREFIX + "/" + memberId;
+    }
+
+    private String resolveAiReply(FreeTalkAiResDTO aiResult) {
+        if (aiResult != null && StringUtils.hasText(aiResult.getAiReply())) {
+            return aiResult.getAiReply().trim();
+        }
+
+        throw new CustomException(ErrorCode.AI_SERVER_ERROR);
+    }
+
+    private String resolveAiFeedback(FreeTalkAiResDTO aiResult) {
+        if (aiResult != null && StringUtils.hasText(aiResult.getAiFeedback())) {
+            return aiResult.getAiFeedback().trim();
+        }
+
+        throw new CustomException(ErrorCode.AI_SERVER_ERROR);
     }
 }
