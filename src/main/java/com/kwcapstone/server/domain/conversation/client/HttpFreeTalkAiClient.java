@@ -1,7 +1,9 @@
 package com.kwcapstone.server.domain.conversation.client;
 
 import com.kwcapstone.server.domain.conversation.client.dto.request.FreeTalkAiReqDTO;
+import com.kwcapstone.server.domain.conversation.client.dto.request.SttAiReqDTO;
 import com.kwcapstone.server.domain.conversation.client.dto.response.FreeTalkAiResDTO;
+import com.kwcapstone.server.domain.conversation.client.dto.response.SttAiResDTO;
 import com.kwcapstone.server.global.apiPayload.exception.CustomException;
 import com.kwcapstone.server.global.apiPayload.response.ErrorCode;
 import com.kwcapstone.server.global.config.properties.AiServerProperties;
@@ -43,6 +45,36 @@ public class HttpFreeTalkAiClient implements FreeTalkAiClient {
             return response;
         } catch (RestClientException e) {
             log.error("Failed to call AI server. uri=/chat/free-talk, message={}", e.getMessage(), e);
+
+            throw new CustomException(ErrorCode.AI_SERVER_ERROR);
+        }
+    }
+
+    @Override
+    public SttAiResDTO transcribe(SttAiReqDTO request) {
+        try {
+            SttAiResDTO response = aiRestClient.post()
+                    .uri("/stt")
+                    .body(request)
+                    .retrieve()
+                    .body(SttAiResDTO.class);
+
+            if (response == null) {
+                log.error("AI server returned null response. uri=/stt");
+
+                throw new CustomException(ErrorCode.AI_SERVER_ERROR);
+            }
+
+            if (Boolean.FALSE.equals(response.getSuccess())) {
+                log.error("AI server returned failure response. uri=/stt, success={}",
+                        response.getSuccess());
+
+                throw new CustomException(ErrorCode.AI_SERVER_ERROR);
+            }
+
+            return response;
+        } catch (RestClientException e) {
+            log.error("Failed to call AI server. uri=/stt, message={}", e.getMessage(), e);
 
             throw new CustomException(ErrorCode.AI_SERVER_ERROR);
         }

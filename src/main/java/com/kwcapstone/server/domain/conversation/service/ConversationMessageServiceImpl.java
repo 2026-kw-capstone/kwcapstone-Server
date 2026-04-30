@@ -2,7 +2,9 @@ package com.kwcapstone.server.domain.conversation.service;
 
 import com.kwcapstone.server.domain.conversation.client.FreeTalkAiClient;
 import com.kwcapstone.server.domain.conversation.client.dto.request.FreeTalkAiReqDTO;
+import com.kwcapstone.server.domain.conversation.client.dto.request.SttAiReqDTO;
 import com.kwcapstone.server.domain.conversation.client.dto.response.FreeTalkAiResDTO;
+import com.kwcapstone.server.domain.conversation.client.dto.response.SttAiResDTO;
 import com.kwcapstone.server.domain.conversation.converter.ConversationConverter;
 import com.kwcapstone.server.domain.conversation.dto.request.TextMessageSendReqDTO;
 import com.kwcapstone.server.domain.conversation.dto.request.VoiceMessageSendReqDTO;
@@ -122,7 +124,7 @@ public class ConversationMessageServiceImpl implements ConversationMessageServic
                 userMessage,
                 aiMessage,
                 feedback,
-                null // TODO: 리팩토링 대상
+                null
         );
     }
 
@@ -137,6 +139,9 @@ public class ConversationMessageServiceImpl implements ConversationMessageServic
             return duplicated;
         }
 
+        // 이전 대화 기록
+        List<FreeTalkAiReqDTO.ChatHistoryItem> chatHistory = buildChatHistory(request.getConversationId());
+
         // S3 업로드
         String voiceKey = audioStorageService.upload(
                 buildConversationAudioKeyPrefix(memberId),
@@ -144,58 +149,71 @@ public class ConversationMessageServiceImpl implements ConversationMessageServic
                 request.getVoiceFile()
         );
 
-        // TODO: FastAPI 연동 시 여기서 presigned URL 생성 후 AI 서버로 전달
-        // String presignedUrl = s3Uploader.generatePresignedGetUrl(voiceKey);
-        // ~
+        try {
+            String presignedUrl = audioStorageService.generatePresignedGetUrl(voiceKey);
 
-        String transcript = "임시 STT 결과"; // STT 결과
-        String aiResponse = "임시 AI 응답";
-        String feedbackContent = "임시 피드백";
+            // 1. STT
+            SttAiResDTO sttResult = freeTalkAiClient.transcribe(
+                    new SttAiReqDTO(presignedUrl)
+            );
 
-        Conversation conversation = getOrCreateConversation(
-                memberId,
-                request.getConversationId(),
-                generateTitleFromText(transcript)
-        );
+            String transcript = resolveTranscript(sttResult); // STT 결과
 
-        Message userMessage = messageRepository.save(
-                Message.builder()
-                        .conversation(conversation)
-                        .clientRequestId(request.getClientRequestId())
-                        .role(MessageRole.USER)
-                        .inputType(MessageInputType.VOICE)
-                        .messageVoiceKey(voiceKey)
-                        .content(transcript)
-                        .build()
-        );
+            // 2. 자유대화
+            FreeTalkAiResDTO aiResult = freeTalkAiClient.sendText(
+                    new FreeTalkAiReqDTO(transcript, chatHistory)
+            );
 
-        Message aiMessage = messageRepository.save(
-                Message.builder()
-                        .conversation(conversation)
-                        .clientRequestId(request.getClientRequestId())
-                        .role(MessageRole.AI)
-                        .inputType(MessageInputType.TEXT)
-                        .messageVoiceKey(null)
-                        .content(aiResponse)
-                        .build()
-        );
+            Conversation conversation = getOrCreateConversation(
+                    memberId,
+                    request.getConversationId(),
+                    generateTitleFromText(transcript)
+            );
 
-        MessageFeedback feedback = messageFeedbackRepository.save(
-                MessageFeedback.builder()
-                        .message(userMessage)
-                        .content(feedbackContent)
-                        .build()
-        );
+            Message userMessage = messageRepository.save(
+                    Message.builder()
+                            .conversation(conversation)
+                            .clientRequestId(request.getClientRequestId())
+                            .role(MessageRole.USER)
+                            .inputType(MessageInputType.VOICE)
+                            .messageVoiceKey(voiceKey)
+                            .content(transcript)
+                            .build()
+            );
 
-        conversation.updateLastMessageAt(LocalDateTime.now());
+            Message aiMessage = messageRepository.save(
+                    Message.builder()
+                            .conversation(conversation)
+                            .clientRequestId(request.getClientRequestId())
+                            .role(MessageRole.AI)
+                            .inputType(MessageInputType.TEXT)
+                            .messageVoiceKey(null)
+                            .content(resolveAiReply(aiResult))
+                            .build()
+            );
 
-        return ConversationConverter.toMessageSendResDTO(
-                conversation,
-                userMessage,
-                aiMessage,
-                feedback,
-                null // TODO: 리팩토링 대상
-        );
+            MessageFeedback feedback = messageFeedbackRepository.save(
+                    MessageFeedback.builder()
+                            .message(userMessage)
+                            .content(resolveAiFeedback(aiResult))
+                            .build()
+            );
+
+            conversation.updateLastMessageAt(LocalDateTime.now());
+
+            return ConversationConverter.toMessageSendResDTO(
+                    conversation,
+                    userMessage,
+                    aiMessage,
+                    feedback,
+                    null
+            );
+        } catch (Exception e) {
+            // 업로드만 되고 DB 저장 전에 실패할 경우 orphan 파일 정리
+            audioStorageService.delete(voiceKey);
+
+            throw e;
+        }
     }
 
     /**
@@ -330,6 +348,14 @@ public class ConversationMessageServiceImpl implements ConversationMessageServic
     private String resolveAiFeedback(FreeTalkAiResDTO aiResult) {
         if (aiResult != null && StringUtils.hasText(aiResult.getAiFeedback())) {
             return aiResult.getAiFeedback().trim();
+        }
+
+        throw new CustomException(ErrorCode.AI_SERVER_ERROR);
+    }
+
+    private String resolveTranscript(SttAiResDTO sttResult) {
+        if (sttResult != null && StringUtils.hasText(sttResult.getSttText())) {
+            return sttResult.getSttText().trim();
         }
 
         throw new CustomException(ErrorCode.AI_SERVER_ERROR);
