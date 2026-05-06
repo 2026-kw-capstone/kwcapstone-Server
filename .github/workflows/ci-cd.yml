@@ -1,0 +1,173 @@
+name: CI/CD
+
+on:
+  pull_request:
+    branches: [ develop ]
+  push:
+    branches: [ develop ]
+  workflow_dispatch:
+
+env:
+  IMAGE_REPO: jongseoh/kwcapstone
+
+jobs:
+  ci:
+    name: CI
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root-password
+          MYSQL_DATABASE: kwcapstone
+          MYSQL_USER: kwcapstone
+          MYSQL_PASSWORD: test-password
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -ukwcapstone -ptest-password"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+          --health-start-period=30s
+
+    env:
+      SPRING_PROFILES_ACTIVE: test
+
+      DB_URL: jdbc:mysql://127.0.0.1:3306/kwcapstone?serverTimezone=Asia/Seoul&characterEncoding=UTF-8&useSSL=false&allowPublicKeyRetrieval=true
+      DB_USER: kwcapstone
+      DB_PW: test-password
+
+      JWT_SECRET: dGVzdC1qd3Qtc2VjcmV0LWtleS10ZXN0LWp3dC1zZWNyZXQta2V5LXRlc3Qtand0LXNlY3JldC1rZXktMTIzNDU2Nzg5MA==
+      JWT_ACCESS_TOKEN_EXPIRE_MS: 3600000
+      JWT_REFRESH_TOKEN_EXPIRE_MS: 1209600000
+
+      AWS_ACCESS_KEY_ID: test-access-key
+      AWS_SECRET_ACCESS_KEY: test-secret-key
+      AWS_REGION: ap-northeast-2
+      AWS_S3_BUCKET: test-bucket
+
+      AI_SERVER_BASE_URL: http://localhost:8000
+      AI_SERVER_TOKEN: test-ai-server-token
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: gradle
+
+      - name: Grant execute permission for Gradle
+        run: chmod +x ./gradlew
+
+      - name: Run tests
+        run: ./gradlew test -Dspring.profiles.active=test --no-daemon
+
+      - name: Build JAR
+        run: ./gradlew clean bootJar -x test --no-daemon
+
+      - name: Upload JAR artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-jar
+          path: build/libs/*.jar
+          retention-days: 7
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Docker build check
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: linux/amd64
+          push: false
+          tags: ${{ env.IMAGE_REPO }}:ci-${{ github.sha }}
+
+  build-and-push:
+    name: Build and Push Docker Image
+    runs-on: ubuntu-latest
+    needs: ci
+
+    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+
+    outputs:
+      short_sha: ${{ steps.vars.outputs.short_sha }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set Image tag
+        id: vars
+        run: |
+          echo "short_sha=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+          echo "Image tag: dev-${GITHUB_SHA::7}"
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: |
+            ${{ env.IMAGE_REPO }}:dev
+            ${{ env.IMAGE_REPO }}:dev-${{ steps.vars.outputs.short_sha }}
+
+  deploy:
+    name: Deploy to EC2
+    runs-on: ubuntu-latest
+    needs: build-and-push
+
+    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+
+    concurrency:
+      group: kwcapstone-deploy
+      cancel-in-progress: true
+
+    steps:
+      - name: Deploy by SSH
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+          IMAGE_REPO: jongseoh/kwcapstone
+          APP_IMAGE_TAG: dev-${{ needs.build-and-push.outputs.short_sha }}
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          envs: DOCKERHUB_USERNAME,DOCKERHUB_TOKEN,IMAGE_REPO,APP_IMAGE_TAG
+          script: |
+            set -e
+
+            echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+
+            cd /opt/kwcapstone-Server
+
+            git fetch origin
+            git checkout develop
+            git pull origin develop
+
+            chmod +x scripts/bg-rollout.sh
+
+            IMAGE_REPO="$IMAGE_REPO" APP_IMAGE_TAG="$APP_IMAGE_TAG" ./scripts/bg-rollout.sh --keep-old
+
+            docker image prune -f
