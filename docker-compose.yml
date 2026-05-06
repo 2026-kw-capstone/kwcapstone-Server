@@ -27,10 +27,7 @@ services:
       start_period: 30s
 
   app-blue:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: jongseoh/kwcapstone-server:local
+    image: ${IMAGE_REPO:-jongseoh/kwcapstone}:${APP_IMAGE_TAG:-dev}
     container_name: kwcapstone-app-blue
     restart: always
     depends_on:
@@ -54,10 +51,7 @@ services:
       start_period: 60s
 
   app-green:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: jongseoh/kwcapstone-server:local
+    image: ${IMAGE_REPO:-jongseoh/kwcapstone}:${APP_IMAGE_TAG:-dev}
     container_name: kwcapstone-app-green
     restart: always
     depends_on:

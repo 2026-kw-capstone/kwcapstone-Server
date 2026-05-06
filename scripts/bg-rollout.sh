@@ -50,12 +50,19 @@ ENV_FILE="${ENV_FILE:-.env}"
 NGINX_CONF="${NGINX_CONF:-/etc/nginx/sites-available/kwcapstone}"
 CONTAINER_PREFIX="${CONTAINER_PREFIX:-kwcapstone-app}"
 
+IMAGE_REPO="${IMAGE_REPO:-jongseoh/kwcapstone}"
+APP_IMAGE_TAG="${APP_IMAGE_TAG:-dev}"
+
+export IMAGE_REPO
+export APP_IMAGE_TAG
+
 cd "$PROJECT_ROOT"
 
 info "프로젝트 경로: $PROJECT_ROOT"
 info "Compose 파일: $COMPOSE_FILE"
 info "env: $ENV_FILE"
 info "Nginx 설정 파일: $NGINX_CONF"
+info "배포 이미지: ${IMAGE_REPO}:${APP_IMAGE_TAG}"
 
 if [[ ! -f "$COMPOSE_FILE" ]]; then
   error "Compose 파일을 찾을 수 없습니다: $PROJECT_ROOT/$COMPOSE_FILE"
@@ -214,16 +221,21 @@ fi
 info "MySQL 컨테이너 실행 상태 보장 중..."
 "${DOCKER_COMPOSE[@]}" up -d mysql
 
-# inactive 환경에 새 버전 build & up
-info "$INACTIVE_SERVICE 새 버전 build 시작..."
-"${DOCKER_COMPOSE[@]}" build "$INACTIVE_SERVICE"
+# inactive 환경에 새 이미지 pull & up
+info "$INACTIVE_SERVICE 새 이미지 pull 시작: ${IMAGE_REPO}:${APP_IMAGE_TAG}"
+"${DOCKER_COMPOSE[@]}" pull "$INACTIVE_SERVICE"
+
+if ! docker image inspect "${IMAGE_REPO}:${APP_IMAGE_TAG}" >/dev/null 2>&1; then
+  error "이미지 pull 후 로컬에서 이미지를 찾을 수 없습니다: ${IMAGE_REPO}:${APP_IMAGE_TAG}"
+  exit 1
+fi
 
 info "기존 inactive 컨테이너 정리: $INACTIVE_SERVICE"
 "${DOCKER_COMPOSE[@]}" stop "$INACTIVE_SERVICE" || true
 "${DOCKER_COMPOSE[@]}" rm -f "$INACTIVE_SERVICE" || true
 
 info "새 inactive 컨테이너 실행: $INACTIVE_SERVICE"
-"${DOCKER_COMPOSE[@]}" up -d "$INACTIVE_SERVICE"
+"${DOCKER_COMPOSE[@]}" up -d --no-deps "$INACTIVE_SERVICE"
 
 # Health Check
 if ! wait_for_health "$INACTIVE_CONTAINER" "$INACTIVE_PORT" 180 5; then
