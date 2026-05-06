@@ -39,7 +39,7 @@ jobs:
       DB_USER: kwcapstone
       DB_PW: test-password
 
-      JWT_SECRET: test-jwt-secret-key-test-jwt-secret-key-test-jwt-secret-key-1234567890
+      JWT_SECRET: dGVzdC1qd3Qtc2VjcmV0LWtleS10ZXN0LWp3dC1zZWNyZXQta2V5LXRlc3Qtand0LXNlY3JldC1rZXktMTIzNDU2Nzg5MA==
       JWT_ACCESS_TOKEN_EXPIRE_MS: 3600000
       JWT_REFRESH_TOKEN_EXPIRE_MS: 1209600000
 
