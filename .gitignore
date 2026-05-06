@@ -36,4 +36,8 @@ out/
 ### VS Code ###
 .vscode/
 
+### env ###
 .env
+
+### Codex ###
+AI_GUIDE.md
