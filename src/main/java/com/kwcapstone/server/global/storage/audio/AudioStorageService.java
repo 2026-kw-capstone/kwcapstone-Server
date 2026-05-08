@@ -9,4 +9,13 @@ public interface AudioStorageService {
     void delete(String key);
     void deleteAll(Collection<String> keys);
     String generatePresignedGetUrl(String key);
+
+    // TTS
+    String uploadBytes(
+            String keyPrefix,
+            String fileBaseName,
+            byte[] bytes,
+            String contentType,
+            String extension
+    );
 }
