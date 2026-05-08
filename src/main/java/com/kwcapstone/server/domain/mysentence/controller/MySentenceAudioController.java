@@ -1,6 +1,7 @@
 package com.kwcapstone.server.domain.mysentence.controller;
 
 import com.kwcapstone.server.domain.mysentence.dto.response.MySentenceTtsResDTO;
+import com.kwcapstone.server.domain.mysentence.dto.response.MySentenceUserAudioResDTO;
 import com.kwcapstone.server.domain.mysentence.service.MySentenceAudioService;
 import com.kwcapstone.server.global.apiPayload.response.ApiResponse;
 import com.kwcapstone.server.global.apiPayload.response.SuccessCode;
@@ -24,6 +25,17 @@ public class MySentenceAudioController {
             @PathVariable Long sentenceId
     ) {
         MySentenceTtsResDTO result = mySentenceAudioService.getTts(sentenceId);
+        return ApiResponse.onSuccess(result, SuccessCode.OK);
+    }
+
+    @Operation(summary = "내 음성 듣기")
+    @GetMapping("/{sentenceId}/user-audio")
+    public ApiResponse<MySentenceUserAudioResDTO> getUserAudio(
+            @PathVariable Long sentenceId
+    ) {
+        MySentenceUserAudioResDTO result =
+                mySentenceAudioService.getUserAudio(sentenceId);
+
         return ApiResponse.onSuccess(result, SuccessCode.OK);
     }
 }

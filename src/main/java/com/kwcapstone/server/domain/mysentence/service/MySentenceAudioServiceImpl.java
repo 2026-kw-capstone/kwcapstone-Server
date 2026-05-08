@@ -3,8 +3,11 @@ package com.kwcapstone.server.domain.mysentence.service;
 import com.kwcapstone.server.domain.mysentence.client.MySentenceAiClient;
 import com.kwcapstone.server.domain.mysentence.dto.request.MySentenceTtsReqDTO;
 import com.kwcapstone.server.domain.mysentence.dto.response.MySentenceTtsResDTO;
+import com.kwcapstone.server.domain.mysentence.dto.response.MySentenceUserAudioResDTO;
 import com.kwcapstone.server.domain.mysentence.entity.MySentence;
+import com.kwcapstone.server.domain.mysentence.entity.MySentenceAnalysisResult;
 import com.kwcapstone.server.domain.mysentence.exception.code.MySentenceErrorCode;
+import com.kwcapstone.server.domain.mysentence.repository.MySentenceAnalysisResultRepository;
 import com.kwcapstone.server.domain.mysentence.repository.MySentenceRepository;
 import com.kwcapstone.server.global.apiPayload.exception.CustomException;
 import com.kwcapstone.server.global.security.SecurityUtil;
@@ -26,6 +29,7 @@ public class MySentenceAudioServiceImpl implements MySentenceAudioService {
     private final MySentenceRepository mySentenceRepository;
     private final MySentenceAiClient mySentenceAiClient;
     private final AudioStorageService audioStorageService;
+    private final MySentenceAnalysisResultRepository mySentenceAnalysisResultRepository;
 
     @Override
     public MySentenceTtsResDTO getTts(Long sentenceId) {
@@ -68,6 +72,39 @@ public class MySentenceAudioServiceImpl implements MySentenceAudioService {
                 mySentence.getSentenceContent(),
                 aiAudioUrl,
                 PRESIGNED_EXPIRES_IN
+        );
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public MySentenceUserAudioResDTO getUserAudio(Long sentenceId) {
+        Long memberId = SecurityUtil.getCurrentMemberId();
+
+        MySentence mySentence = mySentenceRepository.findByIdAndDeletedAtIsNull(sentenceId)
+                .orElseThrow(() -> new CustomException(MySentenceErrorCode.MY_SENTENCE_NOT_FOUND));
+
+        if (!mySentence.getMember().getId().equals(memberId)) {
+            throw new CustomException(MySentenceErrorCode.MY_SENTENCE_FORBIDDEN);
+        }
+
+        MySentenceAnalysisResult latestResult =
+                mySentenceAnalysisResultRepository
+                        .findTopByMySentence_IdAndMember_IdOrderByCreatedAtDesc(sentenceId, memberId)
+                        .orElseThrow(() -> new CustomException(
+                                MySentenceErrorCode.RECENT_USER_AUDIO_NOT_FOUND
+                        ));
+
+        if (latestResult.getUserAudioKey() == null || latestResult.getUserAudioKey().isBlank()) {
+            throw new CustomException(MySentenceErrorCode.RECENT_USER_AUDIO_NOT_FOUND);
+        }
+
+        String userAudioUrl = audioStorageService.generatePresignedGetUrl(latestResult.getUserAudioKey());
+
+        return new MySentenceUserAudioResDTO(
+                mySentence.getId(),
+                latestResult.getId(),
+                userAudioUrl,
+                600L
         );
     }
 }
