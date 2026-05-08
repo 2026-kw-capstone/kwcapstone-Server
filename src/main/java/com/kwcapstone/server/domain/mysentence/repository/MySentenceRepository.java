@@ -9,6 +9,7 @@ import java.util.Optional;
 public interface MySentenceRepository extends JpaRepository<MySentence, Long> {
     // 저장된 문장 목록 조회
     List<MySentence> findAllByMemberIdAndDeletedAtIsNullOrderByCreatedAtDesc(Long memberId);
-    Optional<MySentence> findByIdAndMemberIdAndDeletedAtIsNull(Long sentenceId, Long memberId);
+    // 나만의 문장 삭제
+    Optional<MySentence> findByIdAndDeletedAtIsNull(Long sentenceId);
     boolean existsByIdAndMemberIdAndDeletedAtIsNull(Long sentenceId, Long memberId);
 }
