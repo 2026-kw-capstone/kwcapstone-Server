@@ -3,6 +3,7 @@ package com.kwcapstone.server.domain.mysentence.converter;
 import com.kwcapstone.server.domain.member.entity.Member;
 import com.kwcapstone.server.domain.mysentence.dto.request.MySentenceCreateReqDTO;
 import com.kwcapstone.server.domain.mysentence.dto.response.MySentenceCreateResDTO;
+import com.kwcapstone.server.domain.mysentence.dto.response.MySentenceDetailResDTO;
 import com.kwcapstone.server.domain.mysentence.dto.response.MySentenceListResDTO;
 import com.kwcapstone.server.domain.mysentence.entity.MySentence;
 
@@ -39,6 +40,13 @@ public class MySentenceConverter {
                 mySentences.stream()
                         .map(MySentenceConverter::toMySentenceInfo)
                         .toList()
+        );
+    }
+
+    public static MySentenceDetailResDTO toDetailResponse(MySentence mySentence) {
+        return new MySentenceDetailResDTO(
+                mySentence.getId(),
+                mySentence.getSentenceContent()
         );
     }
 }

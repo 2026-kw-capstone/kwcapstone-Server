@@ -1,5 +1,6 @@
 package com.kwcapstone.server.domain.mysentence.controller;
 
+import com.kwcapstone.server.domain.mysentence.dto.response.MySentenceDetailResDTO;
 import com.kwcapstone.server.domain.mysentence.dto.response.MySentenceListResDTO;
 import com.kwcapstone.server.domain.mysentence.service.MySentenceQueryService;
 import com.kwcapstone.server.global.apiPayload.response.ApiResponse;
@@ -7,6 +8,7 @@ import com.kwcapstone.server.global.apiPayload.response.SuccessCode;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -17,10 +19,23 @@ public class MySentenceQueryController {
 
     private final MySentenceQueryService mySentenceQueryService;
 
+    // 저장된 문장 목록 조회 API
     @Operation(summary = "저장된 문장 목록 조회")
     @GetMapping
     public ApiResponse<MySentenceListResDTO> getMySentences() {
         MySentenceListResDTO result = mySentenceQueryService.getMySentences();
+        return ApiResponse.onSuccess(result, SuccessCode.OK);
+    }
+
+    // 선택된 문장 상세 조회 API
+    @Operation (summary = "선택된 문장 상세 조회")
+    @GetMapping("/{sentenceId}")
+    public ApiResponse<MySentenceDetailResDTO> getMySentenceDetail(
+            @PathVariable Long sentenceId
+    ) {
+        MySentenceDetailResDTO result =
+                mySentenceQueryService.getMySentenceDetail(sentenceId);
+
         return ApiResponse.onSuccess(result, SuccessCode.OK);
     }
 }
