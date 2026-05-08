@@ -3,7 +3,10 @@ package com.kwcapstone.server.domain.mysentence.converter;
 import com.kwcapstone.server.domain.member.entity.Member;
 import com.kwcapstone.server.domain.mysentence.dto.request.MySentenceCreateReqDTO;
 import com.kwcapstone.server.domain.mysentence.dto.response.MySentenceCreateResDTO;
+import com.kwcapstone.server.domain.mysentence.dto.response.MySentenceListResDTO;
 import com.kwcapstone.server.domain.mysentence.entity.MySentence;
+
+import java.util.List;
 
 public class MySentenceConverter {
 
@@ -21,6 +24,21 @@ public class MySentenceConverter {
         return new MySentenceCreateResDTO(
                 mySentence.getId(),
                 mySentence.getSentenceContent()
+        );
+    }
+
+    public static MySentenceListResDTO.MySentenceInfo toMySentenceInfo(MySentence mySentence) {
+        return new MySentenceListResDTO.MySentenceInfo(
+                mySentence.getId(),
+                mySentence.getSentenceContent()
+        );
+    }
+
+    public static MySentenceListResDTO toListResponse(List<MySentence> mySentences) {
+        return new MySentenceListResDTO(
+                mySentences.stream()
+                        .map(MySentenceConverter::toMySentenceInfo)
+                        .toList()
         );
     }
 }
