@@ -10,10 +10,7 @@ import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
-import software.amazon.awssdk.services.s3.model.GetObjectRequest;
-import software.amazon.awssdk.services.s3.model.PutObjectRequest;
-import software.amazon.awssdk.services.s3.model.S3Exception;
+import software.amazon.awssdk.services.s3.model.*;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
 
@@ -175,7 +172,8 @@ public class S3AudioStorageService implements AudioStorageService {
     }
 
     // S3 key(=S3 파일 경로) 생성 메서드
-    private String buildKey(String keyPrefix, String fileBaseName, String extension) {
+    @Override
+    public String buildKey(String keyPrefix, String fileBaseName, String extension) {
         String normalizedRoot = trimSlashes(audioRootPath);
         String normalizedPrefix = trimSlashes(keyPrefix);
         String normalizedBaseName = sanitizeFileBaseName(fileBaseName);
@@ -185,6 +183,103 @@ public class S3AudioStorageService implements AudioStorageService {
         }
 
         return normalizedRoot + "/" + normalizedPrefix + "/" + normalizedBaseName + extension;
+    }
+
+    // 모범 음성 캐싱용 메서드
+    @Override
+    public boolean exists(String key) {
+        if (key == null || key.isBlank()) {
+            return false;
+        }
+
+        try {
+            HeadObjectRequest headObjectRequest = HeadObjectRequest.builder()
+                    .bucket(bucket)
+                    .key(key)
+                    .build();
+
+            s3Client.headObject(headObjectRequest);
+
+            return true;
+        } catch (S3Exception e) {
+            if (e.statusCode() == 404) {
+                return false;
+            }
+
+            log.error(
+                    "S3Exception during exists check. bucket={}, key={}, statusCode={}, errorCode={}, errorMessage={}",
+                    bucket,
+                    key,
+                    e.statusCode(),
+                    e.awsErrorDetails() != null ? e.awsErrorDetails().errorCode() : null,
+                    e.awsErrorDetails() != null ? e.awsErrorDetails().errorMessage() : e.getMessage(),
+                    e
+            );
+
+            throw new CustomException(ErrorCode.FILE_UPLOAD_FAILED);
+        } catch (SdkClientException e) {
+            log.error(
+                    "SdkClientException during exists check. bucket={}, key={}, message={}",
+                    bucket,
+                    key,
+                    e.getMessage(),
+                    e
+            );
+
+            throw new CustomException(ErrorCode.FILE_UPLOAD_FAILED);
+        }
+    }
+
+    // 모범 음성 최초 업로드용 메서드
+    @Override
+    public String uploadBytes(String key, byte[] bytes, String contentType) {
+        if (key == null || key.isBlank() || bytes == null || bytes.length == 0) {
+            throw new CustomException(ErrorCode.INVALID_REQUEST);
+        }
+
+        log.info(
+                "S3 bytes upload start. bucket={}, key={}, contentType={}, size={}",
+                bucket,
+                key,
+                contentType,
+                bytes.length
+        );
+
+        try {
+            PutObjectRequest putObjectRequest = PutObjectRequest.builder()
+                    .bucket(bucket)
+                    .key(key)
+                    .contentType(contentType)
+                    .build();
+
+            s3Client.putObject(putObjectRequest, RequestBody.fromBytes(bytes));
+
+            log.info("S3 bytes upload success. bucket={}, key={}", bucket, key);
+
+            return key;
+        } catch (S3Exception e) {
+            log.error(
+                    "S3Exception during bytes upload. bucket={}, key={}, statusCode={}, errorCode={}, errorMessage={}",
+                    bucket,
+                    key,
+                    e.statusCode(),
+                    e.awsErrorDetails() != null ? e.awsErrorDetails().errorCode() : null,
+                    e.awsErrorDetails() != null ? e.awsErrorDetails().errorMessage() : e.getMessage(),
+                    e
+            );
+
+            throw new CustomException(ErrorCode.FILE_UPLOAD_FAILED);
+        } catch (SdkClientException e) {
+            log.error(
+                    "SdkClientException during bytes upload. bucket={}, key={}, message={}",
+                    bucket,
+                    key,
+                    e.getMessage(),
+                    e
+            );
+
+            throw new CustomException(ErrorCode.FILE_UPLOAD_FAILED);
+        }
     }
 
     // 경로 문자열의 앞뒤 / 제거 메서드(경로 정규화)
