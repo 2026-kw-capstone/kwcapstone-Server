@@ -9,6 +9,7 @@ import com.kwcapstone.server.domain.conversation.converter.ConversationConverter
 import com.kwcapstone.server.domain.conversation.dto.request.TextMessageSendReqDTO;
 import com.kwcapstone.server.domain.conversation.dto.request.VoiceMessageSendReqDTO;
 import com.kwcapstone.server.domain.conversation.dto.response.MessageSendResDTO;
+import com.kwcapstone.server.domain.conversation.dto.response.MessageVoiceUrlResDTO;
 import com.kwcapstone.server.domain.conversation.entity.Conversation;
 import com.kwcapstone.server.domain.conversation.entity.Message;
 import com.kwcapstone.server.domain.conversation.entity.MessageFeedback;
@@ -216,6 +217,29 @@ public class ConversationMessageServiceImpl implements ConversationMessageServic
         }
     }
 
+    // 음성 메시지 재생용 Presigned URL 발급 API 로직
+    @Override
+    @Transactional(readOnly = true)
+    public MessageVoiceUrlResDTO getMessageVoiceUrl(Long messageId) {
+        Long memberId = SecurityUtil.getCurrentMemberId();
+
+        Message message = messageRepository.findByIdAndMemberId(messageId, memberId)
+                .orElseThrow(() -> {
+                    boolean exists = messageRepository.existsById(messageId);
+
+                    return exists
+                            ? new CustomException(ConversationErrorCode.MESSAGE_FORBIDDEN)
+                            : new CustomException(ConversationErrorCode.MESSAGE_NOT_FOUND);
+                });
+
+        // 검증
+        validateVoiceMessage(message);
+
+        String voiceUrl = audioStorageService.generatePresignedGetUrl(message.getMessageVoiceKey());
+
+        return new MessageVoiceUrlResDTO(message.getId(), voiceUrl);
+    }
+
     /**
      * 1. USER 메시지 조회
      * 2. AI 메시지 조회
@@ -359,5 +383,13 @@ public class ConversationMessageServiceImpl implements ConversationMessageServic
         }
 
         throw new CustomException(ErrorCode.AI_SERVER_ERROR);
+    }
+
+    private void validateVoiceMessage(Message message) {
+        if (message.getRole() != MessageRole.USER
+                || message.getInputType() != MessageInputType.VOICE
+                || !StringUtils.hasText(message.getMessageVoiceKey())) {
+            throw new CustomException(ConversationErrorCode.MESSAGE_VOICE_NOT_FOUND);
+        }
     }
 }
