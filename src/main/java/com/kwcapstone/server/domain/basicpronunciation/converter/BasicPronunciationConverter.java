@@ -1,5 +1,6 @@
 package com.kwcapstone.server.domain.basicpronunciation.converter;
 
+import com.kwcapstone.server.domain.basicpronunciation.dto.response.BasicPronunciationLatestResDTO;
 import com.kwcapstone.server.domain.basicpronunciation.dto.response.BasicPronunciationPracticeResDTO;
 import com.kwcapstone.server.domain.basicpronunciation.entity.BasicPronunciationPractice;
 import com.kwcapstone.server.domain.basicpronunciation.enums.BasicVowel;
@@ -40,6 +41,34 @@ public class BasicPronunciationConverter {
                 practice.getFeedback(),
                 voiceUrl,
                 modelVoiceUrl
+        );
+    }
+
+    public static BasicPronunciationLatestResDTO toLatestEmptyResponse() {
+        return new BasicPronunciationLatestResDTO(
+                false,
+                null
+        );
+    }
+
+    public static BasicPronunciationLatestResDTO toLatestResponse(
+            BasicPronunciationPractice practice,
+            String voiceUrl,
+            String modelVoiceUrl
+    ) {
+        BasicPronunciationLatestResDTO.Practice latestPractice =
+                new BasicPronunciationLatestResDTO.Practice(
+                        practice.getId(),
+                        practice.getAccuracyScore(),
+                        practice.getFeedback(),
+                        voiceUrl,
+                        modelVoiceUrl,
+                        practice.getCreatedAt()
+                );
+
+        return new BasicPronunciationLatestResDTO(
+                true,
+                latestPractice
         );
     }
 }

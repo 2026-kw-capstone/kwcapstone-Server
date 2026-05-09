@@ -5,6 +5,7 @@ import com.kwcapstone.server.domain.basicpronunciation.client.dto.request.VowelP
 import com.kwcapstone.server.domain.basicpronunciation.client.dto.response.VowelPracticeAiResDTO;
 import com.kwcapstone.server.domain.basicpronunciation.converter.BasicPronunciationConverter;
 import com.kwcapstone.server.domain.basicpronunciation.dto.request.BasicPronunciationPracticeReqDTO;
+import com.kwcapstone.server.domain.basicpronunciation.dto.response.BasicPronunciationLatestResDTO;
 import com.kwcapstone.server.domain.basicpronunciation.dto.response.BasicPronunciationPracticeResDTO;
 import com.kwcapstone.server.domain.basicpronunciation.entity.BasicPronunciationPractice;
 import com.kwcapstone.server.domain.basicpronunciation.enums.BasicVowel;
@@ -92,12 +93,33 @@ public class BasicPronunciationServiceImpl implements BasicPronunciationService 
         }
     }
 
+    @Override
+    public BasicPronunciationLatestResDTO getLatestPractice(BasicVowel targetVowel) {
+        Long memberId = SecurityUtil.getCurrentMemberId();
+
+        return basicPronunciationPracticeRepository
+                .findTopByMemberIdAndTargetVowelOrderByCreatedAtDesc(memberId, targetVowel)
+                .map(this::toLatestResponseWithUrls)
+                .orElseGet(BasicPronunciationConverter::toLatestEmptyResponse);
+    }
+
     // 응답 생성 메서드
     private BasicPronunciationPracticeResDTO toPracticeResponseWithUrls(BasicPronunciationPractice practice) {
         String voiceUrl = audioStorageService.generatePresignedGetUrl(practice.getMemberAudioKey());
         String modelVoiceUrl = generateModelVoiceUrl(practice.getTargetVowel());
 
         return BasicPronunciationConverter.toPracticeResponse(
+                practice,
+                voiceUrl,
+                modelVoiceUrl
+        );
+    }
+
+    private BasicPronunciationLatestResDTO toLatestResponseWithUrls(BasicPronunciationPractice practice) {
+        String voiceUrl = audioStorageService.generatePresignedGetUrl(practice.getMemberAudioKey());
+        String modelVoiceUrl = generateModelVoiceUrl(practice.getTargetVowel());
+
+        return BasicPronunciationConverter.toLatestResponse(
                 practice,
                 voiceUrl,
                 modelVoiceUrl
