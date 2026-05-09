@@ -3,6 +3,7 @@ package com.kwcapstone.server.domain.conversation.controller;
 import com.kwcapstone.server.domain.conversation.dto.request.TextMessageSendReqDTO;
 import com.kwcapstone.server.domain.conversation.dto.request.VoiceMessageSendReqDTO;
 import com.kwcapstone.server.domain.conversation.dto.response.MessageSendResDTO;
+import com.kwcapstone.server.domain.conversation.dto.response.MessageVoiceUrlResDTO;
 import com.kwcapstone.server.domain.conversation.service.ConversationMessageService;
 import com.kwcapstone.server.global.apiPayload.response.ApiResponse;
 import com.kwcapstone.server.global.apiPayload.response.SuccessCode;
@@ -33,5 +34,14 @@ public class ConversationMessageController {
         MessageSendResDTO result = conversationMessageService.sendVoiceMessage(request);
 
         return ApiResponse.onSuccess(result, SuccessCode.CREATED, request.getClientRequestId());
+    }
+
+    @GetMapping("/{messageId}/voice")
+    public ApiResponse<MessageVoiceUrlResDTO> getMessageVoiceUrl(
+            @PathVariable Long messageId
+    ) {
+        MessageVoiceUrlResDTO result = conversationMessageService.getMessageVoiceUrl(messageId);
+
+        return ApiResponse.onSuccess(result, SuccessCode.OK);
     }
 }

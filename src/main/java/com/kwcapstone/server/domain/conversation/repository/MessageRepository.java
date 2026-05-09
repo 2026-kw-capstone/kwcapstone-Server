@@ -13,6 +13,19 @@ import java.util.List;
 import java.util.Optional;
 
 public interface MessageRepository extends JpaRepository<Message, Long> {
+    // 메시지 ID + 사용자 기준 메시지 조회
+    @Query("""
+        select m
+        from Message m
+        join fetch m.conversation c
+        where m.id = :messageId
+            and c.member.id = :memberId
+    """)
+    Optional<Message> findByIdAndMemberId(
+            @Param("messageId") Long messageId,
+            @Param("memberId") Long memberId
+    );
+
     // 사용자 기준 메시지 조회
     @Query("""
         select m
