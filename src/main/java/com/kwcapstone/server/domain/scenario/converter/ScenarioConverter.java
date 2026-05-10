@@ -4,6 +4,7 @@ import com.kwcapstone.server.domain.member.entity.Member;
 import com.kwcapstone.server.domain.scenario.dto.request.ScenarioCreateReqDTO;
 import com.kwcapstone.server.domain.scenario.dto.response.ScenarioCreateResDTO;
 import com.kwcapstone.server.domain.scenario.dto.response.ScenarioGenerateAiResDTO;
+import com.kwcapstone.server.domain.scenario.dto.response.ScenarioListResDTO;
 import com.kwcapstone.server.domain.scenario.entity.Scenario;
 import com.kwcapstone.server.domain.scenario.entity.ScenarioLevel;
 import com.kwcapstone.server.domain.scenario.entity.ScenarioStep;
@@ -83,6 +84,18 @@ public class ScenarioConverter {
                 scenario.getTitle(),
                 scenario.getDescription(),
                 levels
+        );
+    }
+
+    public static ScenarioListResDTO toListResponse(List<Scenario> scenarios) {
+        return new ScenarioListResDTO(
+                scenarios.stream()
+                        .map(scenario -> new ScenarioListResDTO.ScenarioInfo(
+                                scenario.getId(),
+                                scenario.getTitle(),
+                                scenario.getDescription()
+                        ))
+                        .toList()
         );
     }
 }
