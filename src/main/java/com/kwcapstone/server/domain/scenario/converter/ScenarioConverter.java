@@ -3,6 +3,7 @@ package com.kwcapstone.server.domain.scenario.converter;
 import com.kwcapstone.server.domain.member.entity.Member;
 import com.kwcapstone.server.domain.scenario.dto.request.ScenarioCreateReqDTO;
 import com.kwcapstone.server.domain.scenario.dto.response.ScenarioCreateResDTO;
+import com.kwcapstone.server.domain.scenario.dto.response.ScenarioDetailResDTO;
 import com.kwcapstone.server.domain.scenario.dto.response.ScenarioGenerateAiResDTO;
 import com.kwcapstone.server.domain.scenario.dto.response.ScenarioListResDTO;
 import com.kwcapstone.server.domain.scenario.entity.Scenario;
@@ -94,6 +95,24 @@ public class ScenarioConverter {
                                 scenario.getId(),
                                 scenario.getTitle(),
                                 scenario.getDescription()
+                        ))
+                        .toList()
+        );
+    }
+
+    public static ScenarioDetailResDTO toDetailResponse(
+            Scenario scenario,
+            List<ScenarioLevel> levels
+    ) {
+        return new ScenarioDetailResDTO(
+                scenario.getId(),
+                scenario.getTitle(),
+                scenario.getDescription(),
+                levels.stream()
+                        .map(level -> new ScenarioDetailResDTO.LevelInfo(
+                                level.getLevelNo(),
+                                level.getLevelTitle(),
+                                level.getLevelDescription()
                         ))
                         .toList()
         );
