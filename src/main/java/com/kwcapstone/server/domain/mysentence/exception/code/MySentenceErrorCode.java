@@ -17,7 +17,7 @@ public enum MySentenceErrorCode implements BaseCode {
     RECENT_USER_AUDIO_NOT_FOUND(HttpStatus.NOT_FOUND, "WARMUP_404_2", "최근 녹음 음성이 없습니다."),
 
     // 5xx
-    TTS_GENERATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "WARMUP_500_1", "TTS 생성에 실패했습니다.")
+    TTS_GENERATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "WARMUP_500", "TTS 생성에 실패했습니다.")
     ;
 
 
