@@ -30,7 +30,7 @@ public class MySentenceAnalysisResult extends BaseEntity {
     @Column(name = "pronunciation_score", nullable = false, precision = 5, scale = 2)
     private BigDecimal pronunciationScore;
 
-    @Column(name = "speech_rate_score", nullable = false, precision = 4, scale = 2)
+    @Column(name = "speech_rate_score", nullable = false, precision = 5, scale = 2)
     private BigDecimal speechRateScore;
 
     @Column(name = "silence_ratio", nullable = false, precision = 5, scale = 2)
