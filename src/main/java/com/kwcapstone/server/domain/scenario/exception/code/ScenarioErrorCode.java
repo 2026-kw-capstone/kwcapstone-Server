@@ -20,6 +20,7 @@ public enum ScenarioErrorCode implements BaseCode {
     SCENARIO_NOT_FOUND(HttpStatus.NOT_FOUND, "SCENARIO_404_1", "시나리오를 찾을 수 없습니다."),
     SCENARIO_STEP_NOT_FOUND(HttpStatus.NOT_FOUND, "SCENARIO_404_2", "대화 단계를 찾을 수 없습니다."),
     USER_AUDIO_NOT_FOUND(HttpStatus.NOT_FOUND, "SCENARIO_404_3", "저장된 음성 파일을 찾을 수 없습니다."),
+    SCENARIO_RESULT_NOT_FOUND(HttpStatus.NOT_FOUND, "SCENARIO_404_4", "훈련 결과를 찾을 수 없습니다."),
 
     // 5xx
     SCENARIO_GENERATION_FAILED(HttpStatus.BAD_GATEWAY, "SCENAIRO_502_1", "AI 서버 시나리오 생성에 실패했습니다."),

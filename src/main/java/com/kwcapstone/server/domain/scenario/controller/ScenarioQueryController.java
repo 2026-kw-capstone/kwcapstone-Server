@@ -1,6 +1,7 @@
 package com.kwcapstone.server.domain.scenario.controller;
 
 import com.kwcapstone.server.domain.scenario.dto.response.ScenarioDetailResDTO;
+import com.kwcapstone.server.domain.scenario.dto.response.ScenarioLevelResultResDTO;
 import com.kwcapstone.server.domain.scenario.dto.response.ScenarioListResDTO;
 import com.kwcapstone.server.domain.scenario.dto.response.ScenarioStepDetailResDTO;
 import com.kwcapstone.server.domain.scenario.service.ScenarioQueryService;
@@ -44,6 +45,18 @@ public class ScenarioQueryController {
     ) {
         ScenarioStepDetailResDTO result =
                 scenarioQueryService.getScenarioStep(scenarioId, level, stepNo);
+
+        return ApiResponse.onSuccess(result, SuccessCode.OK);
+    }
+
+    @Operation(summary = "시나리오 훈련 완료 결과 조회")
+    @GetMapping("/{scenarioId}/levels/{level}/result")
+    public ApiResponse<ScenarioLevelResultResDTO> getScenarioLevelResult(
+            @PathVariable Long scenarioId,
+            @PathVariable Integer level
+    ) {
+        ScenarioLevelResultResDTO result =
+                scenarioQueryService.getScenarioLevelResult(scenarioId, level);
 
         return ApiResponse.onSuccess(result, SuccessCode.OK);
     }
