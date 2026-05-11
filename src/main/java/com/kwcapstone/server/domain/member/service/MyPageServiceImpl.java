@@ -2,6 +2,7 @@ package com.kwcapstone.server.domain.member.service;
 
 import com.kwcapstone.server.domain.member.converter.MyPageConverter;
 import com.kwcapstone.server.domain.member.dto.response.MyPageMeResDTO;
+import com.kwcapstone.server.domain.member.dto.response.UpdateNicknameResDTO;
 import com.kwcapstone.server.domain.member.entity.Member;
 import com.kwcapstone.server.domain.member.exception.code.MemberErrorCode;
 import com.kwcapstone.server.domain.member.repository.MemberRepository;
@@ -25,5 +26,22 @@ public class MyPageServiceImpl implements MyPageService {
                 .orElseThrow(() -> new CustomException(MemberErrorCode.MEMBER_NOT_FOUND));
 
         return MyPageConverter.toMyPageMeResDTO(member);
+    }
+
+    @Override
+    @Transactional
+    public UpdateNicknameResDTO updateMyNickname(String nickname) {
+        Long memberId = SecurityUtil.getCurrentMemberId();
+
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new CustomException(MemberErrorCode.MEMBER_NOT_FOUND));
+
+        if (member.getNickname().equals(nickname)) {
+            return MyPageConverter.toUpdateNicknameResDTO(member.getNickname());
+        }
+
+        member.changeNickname(nickname);
+
+        return MyPageConverter.toUpdateNicknameResDTO(member.getNickname());
     }
 }
