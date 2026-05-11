@@ -1,7 +1,9 @@
 package com.kwcapstone.server.domain.scenario.client;
 
 import com.kwcapstone.server.domain.scenario.dto.request.ScenarioGenerateAiReqDTO;
+import com.kwcapstone.server.domain.scenario.dto.request.ScenarioPracticeAiReqDTO;
 import com.kwcapstone.server.domain.scenario.dto.response.ScenarioGenerateAiResDTO;
+import com.kwcapstone.server.domain.scenario.dto.response.ScenarioPracticeAiResDTO;
 import com.kwcapstone.server.domain.scenario.exception.code.ScenarioErrorCode;
 import com.kwcapstone.server.global.apiPayload.exception.CustomException;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +26,24 @@ public class HttpScenarioAiClient implements ScenarioAiClient {
                     .body(ScenarioGenerateAiResDTO.class);
         } catch (Exception e) {
             throw new CustomException(ScenarioErrorCode.SCENARIO_GENERATION_FAILED);
+        }
+    }
+
+    @Override
+    public ScenarioPracticeAiResDTO practiceScenario(
+            ScenarioPracticeAiReqDTO request
+    ) {
+        try {
+            return aiRestClient.post()
+                    .uri("/practice/scenario")
+                    .body(request)
+                    .retrieve()
+                    .body(ScenarioPracticeAiResDTO.class);
+
+        } catch (Exception e) {
+            throw new CustomException(
+                    ScenarioErrorCode.SCENARIO_ANALYSIS_FAILED
+            );
         }
     }
 }
