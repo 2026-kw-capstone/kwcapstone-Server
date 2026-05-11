@@ -2,10 +2,7 @@ package com.kwcapstone.server.domain.scenario.converter;
 
 import com.kwcapstone.server.domain.member.entity.Member;
 import com.kwcapstone.server.domain.scenario.dto.request.ScenarioCreateReqDTO;
-import com.kwcapstone.server.domain.scenario.dto.response.ScenarioCreateResDTO;
-import com.kwcapstone.server.domain.scenario.dto.response.ScenarioDetailResDTO;
-import com.kwcapstone.server.domain.scenario.dto.response.ScenarioGenerateAiResDTO;
-import com.kwcapstone.server.domain.scenario.dto.response.ScenarioListResDTO;
+import com.kwcapstone.server.domain.scenario.dto.response.*;
 import com.kwcapstone.server.domain.scenario.entity.Scenario;
 import com.kwcapstone.server.domain.scenario.entity.ScenarioLevel;
 import com.kwcapstone.server.domain.scenario.entity.ScenarioStep;
@@ -115,6 +112,26 @@ public class ScenarioConverter {
                                 level.getLevelDescription()
                         ))
                         .toList()
+        );
+    }
+
+    public static ScenarioStepDetailResDTO toStepDetailResponse(
+            Scenario scenario,
+            ScenarioLevel level,
+            ScenarioStep step,
+            Long totalStepCount,
+            Boolean isAnswered
+    ) {
+        return new ScenarioStepDetailResDTO(
+                scenario.getId(),
+                level.getLevelNo(),
+                step.getStepNo(),
+                totalStepCount,
+                level.getLevelTitle(),
+                step.getStepName(),
+                step.getAssistantMessage(),
+                step.getUserIntent(),
+                isAnswered
         );
     }
 }
