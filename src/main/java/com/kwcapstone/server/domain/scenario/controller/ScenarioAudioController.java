@@ -1,6 +1,7 @@
 package com.kwcapstone.server.domain.scenario.controller;
 
 import com.kwcapstone.server.domain.scenario.dto.response.ScenarioAnswerAnalyzeResDTO;
+import com.kwcapstone.server.domain.scenario.dto.response.ScenarioUserAudioResDTO;
 import com.kwcapstone.server.domain.scenario.service.ScenarioAudioService;
 import com.kwcapstone.server.global.apiPayload.response.ApiResponse;
 import com.kwcapstone.server.global.apiPayload.response.SuccessCode;
@@ -34,6 +35,23 @@ public class ScenarioAudioController {
                         level,
                         stepNo,
                         voiceFile
+                );
+
+        return ApiResponse.onSuccess(result, SuccessCode.OK);
+    }
+
+    @Operation(summary = "시나리오 내 음성 듣기")
+    @GetMapping("/{scenarioId}/levels/{level}/steps/{stepNo}/user-audio")
+    public ApiResponse<ScenarioUserAudioResDTO> getScenarioUserAudio(
+            @PathVariable Long scenarioId,
+            @PathVariable Integer level,
+            @PathVariable Integer stepNo
+    ) {
+        ScenarioUserAudioResDTO result =
+                scenarioAudioService.getScenarioUserAudio(
+                        scenarioId,
+                        level,
+                        stepNo
                 );
 
         return ApiResponse.onSuccess(result, SuccessCode.OK);

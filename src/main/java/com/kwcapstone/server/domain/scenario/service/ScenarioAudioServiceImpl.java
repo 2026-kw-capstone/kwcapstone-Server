@@ -6,6 +6,7 @@ import com.kwcapstone.server.domain.scenario.client.ScenarioAiClient;
 import com.kwcapstone.server.domain.scenario.dto.request.ScenarioPracticeAiReqDTO;
 import com.kwcapstone.server.domain.scenario.dto.response.ScenarioAnswerAnalyzeResDTO;
 import com.kwcapstone.server.domain.scenario.dto.response.ScenarioPracticeAiResDTO;
+import com.kwcapstone.server.domain.scenario.dto.response.ScenarioUserAudioResDTO;
 import com.kwcapstone.server.domain.scenario.entity.Scenario;
 import com.kwcapstone.server.domain.scenario.entity.ScenarioAnalysisResult;
 import com.kwcapstone.server.domain.scenario.entity.ScenarioLevel;
@@ -129,6 +130,57 @@ public class ScenarioAudioServiceImpl implements ScenarioAudioService {
                                 word.getGrade()
                         ))
                         .toList()
+        );
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ScenarioUserAudioResDTO getScenarioUserAudio(
+            Long scenarioId,
+            Integer level,
+            Integer stepNo
+    ) {
+        validateLevel(level);
+        validateStep(stepNo);
+
+        Long memberId = SecurityUtil.getCurrentMemberId();
+
+        Scenario scenario = scenarioRepository.findById(scenarioId)
+                .orElseThrow(() -> new CustomException(ScenarioErrorCode.SCENARIO_NOT_FOUND));
+
+        if (!scenario.getMember().getId().equals(memberId)) {
+            throw new CustomException(ScenarioErrorCode.SCENARIO_FORBIDDEN);
+        }
+
+        ScenarioLevel scenarioLevel = scenarioLevelRepository
+                .findByScenarioIdAndLevelNo(scenarioId, level)
+                .orElseThrow(() -> new CustomException(ScenarioErrorCode.SCENARIO_STEP_NOT_FOUND));
+
+        ScenarioStep scenarioStep = scenarioStepRepository
+                .findByScenarioLevelIdAndStepNo(scenarioLevel.getId(), stepNo)
+                .orElseThrow(() -> new CustomException(ScenarioErrorCode.SCENARIO_STEP_NOT_FOUND));
+
+        ScenarioAnalysisResult analysisResult = scenarioAnalysisResultRepository
+                .findTopByScenarioStepIdAndMemberIdOrderByCreatedAtDesc(
+                        scenarioStep.getId(),
+                        memberId
+                )
+                .orElseThrow(() -> new CustomException(ScenarioErrorCode.USER_AUDIO_NOT_FOUND));
+
+        if (analysisResult.getUserAudioKey() == null || analysisResult.getUserAudioKey().isBlank()) {
+            throw new CustomException(ScenarioErrorCode.USER_AUDIO_NOT_FOUND);
+        }
+
+        String userAudioUrl =
+                s3AudioStorageService.generatePresignedGetUrl(analysisResult.getUserAudioKey());
+
+        return new ScenarioUserAudioResDTO(
+                analysisResult.getId(),
+                scenario.getId(),
+                level,
+                stepNo,
+                userAudioUrl,
+                600
         );
     }
 
