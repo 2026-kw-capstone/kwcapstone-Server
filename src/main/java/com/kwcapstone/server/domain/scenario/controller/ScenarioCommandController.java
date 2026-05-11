@@ -1,0 +1,28 @@
+package com.kwcapstone.server.domain.scenario.controller;
+
+import com.kwcapstone.server.domain.scenario.dto.request.ScenarioCreateReqDTO;
+import com.kwcapstone.server.domain.scenario.dto.response.ScenarioCreateResDTO;
+import com.kwcapstone.server.domain.scenario.service.ScenarioCommandService;
+import com.kwcapstone.server.global.apiPayload.response.ApiResponse;
+import com.kwcapstone.server.global.apiPayload.response.SuccessCode;
+import io.swagger.v3.oas.annotations.Operation;
+import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequiredArgsConstructor
+@RequestMapping("/api/conversations/scenarios")
+public class ScenarioCommandController {
+
+    private final ScenarioCommandService scenarioCommandService;
+
+    @Operation(summary = "시나리오 생성")
+    @PostMapping
+    public ApiResponse<ScenarioCreateResDTO> createScenario(
+            @RequestBody ScenarioCreateReqDTO request
+    ) {
+        ScenarioCreateResDTO result = scenarioCommandService.createScenario(request);
+
+        return ApiResponse.onSuccess(result, SuccessCode.OK);
+    }
+}
