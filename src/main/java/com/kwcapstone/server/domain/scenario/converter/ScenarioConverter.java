@@ -4,6 +4,7 @@ import com.kwcapstone.server.domain.member.entity.Member;
 import com.kwcapstone.server.domain.scenario.dto.request.ScenarioCreateReqDTO;
 import com.kwcapstone.server.domain.scenario.dto.response.*;
 import com.kwcapstone.server.domain.scenario.entity.Scenario;
+import com.kwcapstone.server.domain.scenario.entity.ScenarioAnalysisResult;
 import com.kwcapstone.server.domain.scenario.entity.ScenarioLevel;
 import com.kwcapstone.server.domain.scenario.entity.ScenarioStep;
 
@@ -133,5 +134,39 @@ public class ScenarioConverter {
                 step.getUserIntent(),
                 isAnswered
         );
+    }
+
+    public static ScenarioAnalysisResult toScenarioAnalysisResult(
+            ScenarioStep scenarioStep,
+            Member member,
+            String userAudioKey,
+            String wordAnalysisJson,
+            ScenarioPracticeAiResDTO aiResponse
+    ) {
+        return ScenarioAnalysisResult.builder()
+                .scenarioStep(scenarioStep)
+                .member(member)
+                .userAudioKey(userAudioKey)
+
+                .pronunciationScore(aiResponse.getPronunciationScore())
+                .meaningDeliveryScore(aiResponse.getMeaningDeliveryScore())
+
+                .speechRateScore(
+                        aiResponse.getVoiceAnalysis()
+                                .getSpeechRate()
+                                .getScore()
+                )
+
+                .silenceRatio(
+                        aiResponse.getVoiceAnalysis()
+                                .getSilenceRatio()
+                                .getPausePercent()
+                )
+
+                .aiFeedback(aiResponse.getFeedback())
+
+                .wordAnalysisJson(wordAnalysisJson)
+
+                .build();
     }
 }
