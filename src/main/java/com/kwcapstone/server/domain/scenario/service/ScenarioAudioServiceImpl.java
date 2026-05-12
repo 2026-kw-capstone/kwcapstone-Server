@@ -2,6 +2,7 @@ package com.kwcapstone.server.domain.scenario.service;
 
 import com.kwcapstone.server.domain.member.entity.Member;
 import com.kwcapstone.server.domain.member.repository.MemberRepository;
+import com.kwcapstone.server.domain.mysentence.exception.code.MySentenceErrorCode;
 import com.kwcapstone.server.domain.scenario.client.ScenarioAiClient;
 import com.kwcapstone.server.domain.scenario.dto.request.ScenarioPracticeAiReqDTO;
 import com.kwcapstone.server.domain.scenario.dto.response.ScenarioAnswerAnalyzeResDTO;
@@ -207,13 +208,13 @@ public class ScenarioAudioServiceImpl implements ScenarioAudioService {
         String contentType = voiceFile.getContentType();
 
         if (contentType == null ||
-                !(contentType.equals("audio/wav")
-                        || contentType.equals("audio/x-wav")
-                        || contentType.equals("audio/mpeg")
+                !(contentType.equals("audio/mpeg")
                         || contentType.equals("audio/mp3")
-                        || contentType.equals("audio/mp4")
-                        || contentType.equals("audio/m4a"))) {
-            throw new CustomException(ScenarioErrorCode.UNSUPPORTED_AUDIO_FORMAT);
+                        || contentType.equals("audio/wav")
+                        || contentType.equals("audio/webm")
+                        || contentType.equals("audio/x-m4a")
+                        || contentType.equals("audio/mp4"))) {
+            throw new CustomException(MySentenceErrorCode.UNSUPPORTED_AUDIO_FORMAT);
         }
     }
 
