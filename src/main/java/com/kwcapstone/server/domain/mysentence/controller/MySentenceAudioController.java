@@ -1,16 +1,17 @@
 package com.kwcapstone.server.domain.mysentence.controller;
 
+import com.kwcapstone.server.domain.mysentence.dto.request.MySentenceAnalyzeReqDTO;
 import com.kwcapstone.server.domain.mysentence.dto.response.MySentenceAnalyzeResDTO;
-import com.kwcapstone.server.domain.mysentence.dto.response.MySentenceTtsResDTO;
+import com.kwcapstone.server.domain.mysentence.client.dto.response.MySentenceTtsAiResDTO;
 import com.kwcapstone.server.domain.mysentence.dto.response.MySentenceUserAudioResDTO;
 import com.kwcapstone.server.domain.mysentence.service.MySentenceAudioService;
 import com.kwcapstone.server.global.apiPayload.response.ApiResponse;
 import com.kwcapstone.server.global.apiPayload.response.SuccessCode;
 import io.swagger.v3.oas.annotations.Operation;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequiredArgsConstructor
@@ -21,10 +22,10 @@ public class MySentenceAudioController {
 
     @Operation(summary = "AI TTS 음성 듣기")
     @GetMapping("/{sentenceId}/tts")
-    public ApiResponse<MySentenceTtsResDTO> getTts(
+    public ApiResponse<MySentenceTtsAiResDTO> getTts(
             @PathVariable Long sentenceId
     ) {
-        MySentenceTtsResDTO result = mySentenceAudioService.getTts(sentenceId);
+        MySentenceTtsAiResDTO result = mySentenceAudioService.getTts(sentenceId);
         return ApiResponse.onSuccess(result, SuccessCode.OK);
     }
 
@@ -41,15 +42,14 @@ public class MySentenceAudioController {
 
     @Operation(summary = " 녹음 파일 업로드 및 발음 분석")
     @PostMapping(
-            value = "/{sentenceId}/pronunciations/analyze",
+            value = "/pronunciations/analyze",
             consumes = MediaType.MULTIPART_FORM_DATA_VALUE
     )
     public ApiResponse<MySentenceAnalyzeResDTO> analyzePronunciation(
-            @PathVariable Long sentenceId,
-            @RequestPart("voiceFile") MultipartFile voiceFile
+            @Valid @ModelAttribute MySentenceAnalyzeReqDTO request
     ) {
         MySentenceAnalyzeResDTO result =
-                mySentenceAudioService.analyzePronunciation(sentenceId, voiceFile);
+                mySentenceAudioService.analyzePronunciation(request);
 
         return ApiResponse.onSuccess(result, SuccessCode.OK);
     }

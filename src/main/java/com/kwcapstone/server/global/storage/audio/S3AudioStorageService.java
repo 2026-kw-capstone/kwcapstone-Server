@@ -171,31 +171,6 @@ public class S3AudioStorageService implements AudioStorageService {
         }
     }
 
-    @Override  // TTS
-    public String uploadBytes(
-            String keyPrefix,
-            String fileBaseName,
-            byte[] bytes,
-            String contentType,
-            String extension
-    ) {
-        String objectKey = buildKey(keyPrefix, fileBaseName, "."+extension);
-
-        PutObjectRequest putObjectRequest = PutObjectRequest.builder()
-                .bucket(bucket)
-                .key(objectKey)
-                .contentType(contentType)
-                .contentLength((long) bytes.length)
-                .build();
-
-        s3Client.putObject(
-                putObjectRequest,
-                RequestBody.fromBytes(bytes)
-        );
-
-        return objectKey;
-    }
-
     // S3 key(=S3 파일 경로) 생성 메서드
     @Override
     public String buildKey(String keyPrefix, String fileBaseName, String extension) {

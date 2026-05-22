@@ -13,7 +13,14 @@ import java.time.LocalDateTime;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
-@Table(name = "my_sentence_analysis_result")
+@Table(
+        name = "my_sentence_analysis_result",
+        uniqueConstraints = {
+                @UniqueConstraint(
+                        columnNames = {"member_id", "client_request_id"}
+                )
+        }
+)
 public class MySentenceAnalysisResult extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -23,6 +30,9 @@ public class MySentenceAnalysisResult extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "member_id", nullable = false)
     private Member member;
+
+    @Column(name = "client_request_id", nullable = false)
+    private String clientRequestId;
 
     @Column(name = "user_audio_key", length = 500)
     private String userAudioKey;
@@ -41,12 +51,4 @@ public class MySentenceAnalysisResult extends BaseEntity {
 
     @Column(name = "syllable_result_json", nullable = false, columnDefinition = "TEXT")
     private String syllableResultJson;
-
-    @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt;
-
-    @PrePersist
-    protected void onCreate() {
-        this.createdAt = LocalDateTime.now();
-    }
 }

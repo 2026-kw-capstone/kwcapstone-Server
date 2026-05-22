@@ -1,4 +1,4 @@
-package com.kwcapstone.server.domain.mysentence.dto.request;
+package com.kwcapstone.server.domain.mysentence.client.dto.request;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
