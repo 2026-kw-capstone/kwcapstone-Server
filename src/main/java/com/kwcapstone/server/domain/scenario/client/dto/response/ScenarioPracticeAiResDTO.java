@@ -1,4 +1,4 @@
-package com.kwcapstone.server.domain.scenario.dto.response;
+package com.kwcapstone.server.domain.scenario.client.dto.response;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;

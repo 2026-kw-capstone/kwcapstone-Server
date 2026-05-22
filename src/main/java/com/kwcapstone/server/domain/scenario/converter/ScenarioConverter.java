@@ -1,6 +1,8 @@
 package com.kwcapstone.server.domain.scenario.converter;
 
 import com.kwcapstone.server.domain.member.entity.Member;
+import com.kwcapstone.server.domain.scenario.client.dto.response.ScenarioGenerateAiResDTO;
+import com.kwcapstone.server.domain.scenario.client.dto.response.ScenarioPracticeAiResDTO;
 import com.kwcapstone.server.domain.scenario.dto.request.ScenarioCreateReqDTO;
 import com.kwcapstone.server.domain.scenario.dto.response.*;
 import com.kwcapstone.server.domain.scenario.entity.Scenario;
@@ -139,6 +141,7 @@ public class ScenarioConverter {
     public static ScenarioAnalysisResult toScenarioAnalysisResult(
             ScenarioStep scenarioStep,
             Member member,
+            String clientRequestId,
             String userAudioKey,
             String wordAnalysisJson,
             ScenarioPracticeAiResDTO aiResponse
@@ -146,27 +149,34 @@ public class ScenarioConverter {
         return ScenarioAnalysisResult.builder()
                 .scenarioStep(scenarioStep)
                 .member(member)
+                .clientRequestId(clientRequestId)
                 .userAudioKey(userAudioKey)
-
                 .pronunciationScore(aiResponse.getPronunciationScore())
                 .meaningDeliveryScore(aiResponse.getMeaningDeliveryScore())
-
                 .speechRateScore(
                         aiResponse.getVoiceAnalysis()
                                 .getSpeechRate()
                                 .getScore()
                 )
-
                 .silenceRatio(
                         aiResponse.getVoiceAnalysis()
                                 .getSilenceRatio()
                                 .getPausePercent()
                 )
-
                 .aiFeedback(aiResponse.getFeedback())
-
                 .wordAnalysisJson(wordAnalysisJson)
-
                 .build();
+    }
+
+    public static List<ScenarioAnswerAnalyzeResDTO.WordAnalysis> toWordAnalysisResponse(
+            ScenarioPracticeAiResDTO aiResponse
+    ) {
+        return aiResponse.getWordAnalysis().stream()
+                .map(word -> new ScenarioAnswerAnalyzeResDTO.WordAnalysis(
+                        word.getRefChar(),
+                        word.getHypChar(),
+                        word.getGrade()
+                ))
+                .toList();
     }
 }

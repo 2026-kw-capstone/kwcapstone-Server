@@ -2,6 +2,7 @@ package com.kwcapstone.server.domain.scenario.dto.response;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -29,6 +30,7 @@ public class ScenarioAnswerAnalyzeResDTO {
     private List<WordAnalysis> wordAnalysis;
 
     @Getter
+    @NoArgsConstructor
     @AllArgsConstructor
     public static class WordAnalysis {
         private String refChar;
