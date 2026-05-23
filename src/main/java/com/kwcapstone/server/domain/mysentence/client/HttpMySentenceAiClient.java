@@ -1,8 +1,8 @@
 package com.kwcapstone.server.domain.mysentence.client;
 
-import com.kwcapstone.server.domain.mysentence.dto.request.MySentenceTtsReqDTO;
-import com.kwcapstone.server.domain.mysentence.dto.request.PronunciationAnalyzeAiReqDTO;
-import com.kwcapstone.server.domain.mysentence.dto.response.PronunciationAnalyzeAiResDTO;
+import com.kwcapstone.server.domain.mysentence.client.dto.request.MySentenceTtsAiReqDTO;
+import com.kwcapstone.server.domain.mysentence.client.dto.request.PronunciationAnalyzeAiReqDTO;
+import com.kwcapstone.server.domain.mysentence.client.dto.response.PronunciationAnalyzeAiResDTO;
 import com.kwcapstone.server.domain.mysentence.exception.code.MySentenceErrorCode;
 import com.kwcapstone.server.global.apiPayload.exception.CustomException;
 import lombok.RequiredArgsConstructor;
@@ -16,7 +16,7 @@ public class HttpMySentenceAiClient implements MySentenceAiClient {
     private final RestClient aiRestClient;
 
     @Override
-    public byte[] requestTts(MySentenceTtsReqDTO request) {
+    public byte[] requestTts(MySentenceTtsAiReqDTO request) {
         try {
             return aiRestClient.post()
                     .uri("/tts")

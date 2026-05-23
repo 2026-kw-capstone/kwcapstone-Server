@@ -12,7 +12,14 @@ import java.math.BigDecimal;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
-@Table(name = "scenario_analysis_result")
+@Table(
+        name = "scenario_analysis_result",
+        uniqueConstraints = {
+                @UniqueConstraint(
+                        columnNames = {"member_id", "client_request_id"}
+                )
+        }
+)
 @AttributeOverride(name = "id", column = @Column(name = "scenario_analysis_result_id"))
 public class ScenarioAnalysisResult extends BaseEntity {
 
@@ -23,6 +30,9 @@ public class ScenarioAnalysisResult extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "member_id", nullable = false)
     private Member member;
+
+    @Column(name = "client_request_id", nullable = false)
+    private String clientRequestId;
 
     @Column(name = "user_audio_key", length = 500)
     private String userAudioKey;

@@ -1,4 +1,4 @@
-package com.kwcapstone.server.domain.mysentence.dto.response;
+package com.kwcapstone.server.domain.scenario.client.dto.response;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -8,15 +8,24 @@ import java.util.List;
 
 @Getter
 @NoArgsConstructor
-public class PronunciationAnalyzeAiResDTO {
+public class ScenarioPracticeAiResDTO {
 
     private Boolean success;
+
+    private String levelTitle;
+    private String step;
+
     private String referenceText;
     private String sttText;
     private String acousticText;
+
     private BigDecimal pronunciationScore;
+    private BigDecimal meaningDeliveryScore;
+
     private String feedback;
+
     private List<WordAnalysis> wordAnalysis;
+
     private VoiceAnalysis voiceAnalysis;
 
     @Getter

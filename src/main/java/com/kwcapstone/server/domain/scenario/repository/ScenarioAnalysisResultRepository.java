@@ -8,4 +8,5 @@ import java.util.Optional;
 public interface ScenarioAnalysisResultRepository extends JpaRepository<ScenarioAnalysisResult, Long> {
     boolean existsByScenarioStepIdAndMemberId(Long scenarioStepId, Long memberId);
     Optional<ScenarioAnalysisResult> findTopByScenarioStepIdAndMemberIdOrderByCreatedAtDesc(Long scenarioStepId, Long memberId);
+    Optional<ScenarioAnalysisResult> findByMemberIdAndClientRequestId(Long memberId, String clientRequestId);
 }

@@ -12,13 +12,4 @@ public interface AudioStorageService {
     String buildKey(String keyPrefix, String fileBaseName, String extension);
     boolean exists(String key);
     String uploadBytes(String key, byte[] bytes, String contentType);
-
-    // TTS
-    String uploadBytes(
-            String keyPrefix,
-            String fileBaseName,
-            byte[] bytes,
-            String contentType,
-            String extension
-    );
 }

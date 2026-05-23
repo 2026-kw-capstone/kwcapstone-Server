@@ -2,11 +2,12 @@ package com.kwcapstone.server.domain.scenario.service;
 
 import com.kwcapstone.server.domain.member.entity.Member;
 import com.kwcapstone.server.domain.member.repository.MemberRepository;
-import com.kwcapstone.server.domain.mysentence.exception.code.MySentenceErrorCode;
 import com.kwcapstone.server.domain.scenario.client.ScenarioAiClient;
-import com.kwcapstone.server.domain.scenario.dto.request.ScenarioPracticeAiReqDTO;
+import com.kwcapstone.server.domain.scenario.client.dto.request.ScenarioPracticeAiReqDTO;
+import com.kwcapstone.server.domain.scenario.client.dto.response.ScenarioPracticeAiResDTO;
+import com.kwcapstone.server.domain.scenario.converter.ScenarioConverter;
+import com.kwcapstone.server.domain.scenario.dto.request.ScenarioAnswerAnalyzeReqDTO;
 import com.kwcapstone.server.domain.scenario.dto.response.ScenarioAnswerAnalyzeResDTO;
-import com.kwcapstone.server.domain.scenario.dto.response.ScenarioPracticeAiResDTO;
 import com.kwcapstone.server.domain.scenario.dto.response.ScenarioUserAudioResDTO;
 import com.kwcapstone.server.domain.scenario.entity.Scenario;
 import com.kwcapstone.server.domain.scenario.entity.ScenarioAnalysisResult;
@@ -20,17 +21,23 @@ import com.kwcapstone.server.domain.scenario.repository.ScenarioStepRepository;
 import com.kwcapstone.server.global.apiPayload.exception.CustomException;
 import com.kwcapstone.server.global.apiPayload.response.ErrorCode;
 import com.kwcapstone.server.global.security.SecurityUtil;
-import com.kwcapstone.server.global.storage.audio.S3AudioStorageService;
+import com.kwcapstone.server.global.storage.audio.AudioStorageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
+import org.springframework.util.StringUtils;
+import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 @Transactional
 public class ScenarioAudioServiceImpl implements ScenarioAudioService {
+
+    private static final String MEMBER_AUDIO_PREFIX = "conversations/scenario/member";
+    private static final long PRESIGNED_EXPIRES_IN = 600L;
 
     private final ScenarioRepository scenarioRepository;
     private final ScenarioLevelRepository scenarioLevelRepository;
@@ -39,26 +46,35 @@ public class ScenarioAudioServiceImpl implements ScenarioAudioService {
     private final MemberRepository memberRepository;
 
     private final ScenarioAiClient scenarioAiClient;
-    private final S3AudioStorageService s3AudioStorageService;
+    private final AudioStorageService audioStorageService;
     private final ObjectMapper objectMapper;
 
     @Override
     public ScenarioAnswerAnalyzeResDTO analyzeScenarioAnswer(
-            Long scenarioId,
-            Integer level,
-            Integer stepNo,
-            MultipartFile voiceFile
+            ScenarioAnswerAnalyzeReqDTO request
     ) {
-        validateLevel(level);
-        validateStep(stepNo);
-        validateVoiceFile(voiceFile);
+        validateLevel(request.getLevel());
+        validateStep(request.getStepNo());
 
         Long memberId = SecurityUtil.getCurrentMemberId();
+
+        // 중복 요청 확인
+        ScenarioAnalysisResult duplicated =
+                scenarioAnalysisResultRepository
+                        .findByMemberIdAndClientRequestId(
+                                memberId,
+                                request.getClientRequestId()
+                        )
+                        .orElse(null);
+
+        if (duplicated != null) {
+            return toAnswerAnalyzeResponseWithSavedWordAnalysis(duplicated);
+        }
 
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new CustomException(ErrorCode.UNAUTHORIZED));
 
-        Scenario scenario = scenarioRepository.findById(scenarioId)
+        Scenario scenario = scenarioRepository.findById(request.getScenarioId())
                 .orElseThrow(() -> new CustomException(ScenarioErrorCode.SCENARIO_NOT_FOUND));
 
         if (!scenario.getMember().getId().equals(memberId)) {
@@ -66,72 +82,79 @@ public class ScenarioAudioServiceImpl implements ScenarioAudioService {
         }
 
         ScenarioLevel scenarioLevel = scenarioLevelRepository
-                .findByScenarioIdAndLevelNo(scenarioId, level)
+                .findByScenarioIdAndLevelNo(
+                        request.getScenarioId(),
+                        request.getLevel()
+                )
                 .orElseThrow(() -> new CustomException(ScenarioErrorCode.SCENARIO_STEP_NOT_FOUND));
 
         ScenarioStep scenarioStep = scenarioStepRepository
-                .findByScenarioLevelIdAndStepNo(scenarioLevel.getId(), stepNo)
+                .findByScenarioLevelIdAndStepNo(
+                        scenarioLevel.getId(),
+                        request.getStepNo()
+                )
                 .orElseThrow(() -> new CustomException(ScenarioErrorCode.SCENARIO_STEP_NOT_FOUND));
 
-        String userAudioKey = uploadVoiceFile(
-                memberId,
-                scenarioId,
-                level,
-                stepNo,
-                voiceFile
+        // 사용자 녹음 파일 S3 업로드
+        String memberAudioKey = audioStorageService.upload(
+                buildMemberAudioKeyPrefix(memberId),
+                request.getClientRequestId(),
+                request.getVoiceFile()
         );
 
-        String presignedUrl = s3AudioStorageService.generatePresignedGetUrl(userAudioKey);
+        try {
+            String memberVoiceUrlForAi =
+                    audioStorageService.generatePresignedGetUrl(memberAudioKey);
 
-        ScenarioPracticeAiResDTO aiResponse = scenarioAiClient.practiceScenario(
-                new ScenarioPracticeAiReqDTO(
-                        presignedUrl,
-                        scenarioLevel.getLevelTitle(),
-                        scenarioStep.getStepName(),
-                        scenarioStep.getAssistantMessage(),
-                        scenarioStep.getUserIntent()
-                )
-        );
+            ScenarioPracticeAiResDTO aiResponse =
+                    scenarioAiClient.practiceScenario(
+                            new ScenarioPracticeAiReqDTO(
+                                    memberVoiceUrlForAi,
+                                    scenarioLevel.getLevelTitle(),
+                                    scenarioStep.getStepName(),
+                                    scenarioStep.getAssistantMessage(),
+                                    scenarioStep.getUserIntent()
+                            )
+                    );
 
-        validateAiResponse(aiResponse);
+            validateAiResponse(aiResponse);
 
-        ScenarioAnalysisResult analysisResult = ScenarioAnalysisResult.builder()
-                .scenarioStep(scenarioStep)
-                .member(member)
-                .userAudioKey(userAudioKey)
-                .pronunciationScore(aiResponse.getPronunciationScore())
-                .meaningDeliveryScore(aiResponse.getMeaningDeliveryScore())
-                .speechRateScore(aiResponse.getVoiceAnalysis().getSpeechRate().getScore())
-                .silenceRatio(aiResponse.getVoiceAnalysis().getSilenceRatio().getPausePercent())
-                .aiFeedback(aiResponse.getFeedback())
-                .wordAnalysisJson(toJson(aiResponse.getWordAnalysis()))
-                .build();
+            List<ScenarioAnswerAnalyzeResDTO.WordAnalysis> wordAnalysis =
+                    ScenarioConverter.toWordAnalysisResponse(aiResponse);
 
-        ScenarioAnalysisResult saved = scenarioAnalysisResultRepository.save(analysisResult);
+            String wordAnalysisJson =
+                    objectMapper.writeValueAsString(wordAnalysis);
 
-        boolean isLastStep = stepNo.equals(3);
-        Integer nextStepNo = isLastStep ? null : stepNo + 1;
+            ScenarioAnalysisResult analysisResult =
+                    ScenarioConverter.toScenarioAnalysisResult(
+                            scenarioStep,
+                            member,
+                            request.getClientRequestId(),
+                            memberAudioKey,
+                            wordAnalysisJson,
+                            aiResponse
+                    );
 
-        return new ScenarioAnswerAnalyzeResDTO(
-                saved.getId(),
-                scenario.getId(),
-                level,
-                stepNo,
-                aiResponse.getPronunciationScore(),
-                aiResponse.getMeaningDeliveryScore(),
-                aiResponse.getVoiceAnalysis().getSpeechRate().getScore(),
-                aiResponse.getVoiceAnalysis().getSilenceRatio().getPausePercent(),
-                aiResponse.getFeedback(),
-                isLastStep,
-                nextStepNo,
-                aiResponse.getWordAnalysis().stream()
-                        .map(word -> new ScenarioAnswerAnalyzeResDTO.WordAnalysis(
-                                word.getRefChar(),
-                                word.getHypChar(),
-                                word.getGrade()
-                        ))
-                        .toList()
-        );
+            ScenarioAnalysisResult saved =
+                    scenarioAnalysisResultRepository.save(analysisResult);
+
+            return toAnswerAnalyzeResponse(
+                    saved,
+                    scenario,
+                    request.getLevel(),
+                    request.getStepNo(),
+                    wordAnalysis
+            );
+
+        } catch (Exception e) {
+            audioStorageService.delete(memberAudioKey);
+
+            if (e instanceof CustomException customException) {
+                throw customException;
+            }
+
+            throw new CustomException(ScenarioErrorCode.SCENARIO_ANALYSIS_FAILED);
+        }
     }
 
     @Override
@@ -168,12 +191,12 @@ public class ScenarioAudioServiceImpl implements ScenarioAudioService {
                 )
                 .orElseThrow(() -> new CustomException(ScenarioErrorCode.USER_AUDIO_NOT_FOUND));
 
-        if (analysisResult.getUserAudioKey() == null || analysisResult.getUserAudioKey().isBlank()) {
+        if (!StringUtils.hasText(analysisResult.getUserAudioKey())) {
             throw new CustomException(ScenarioErrorCode.USER_AUDIO_NOT_FOUND);
         }
 
         String userAudioUrl =
-                s3AudioStorageService.generatePresignedGetUrl(analysisResult.getUserAudioKey());
+                audioStorageService.generatePresignedGetUrl(analysisResult.getUserAudioKey());
 
         return new ScenarioUserAudioResDTO(
                 analysisResult.getId(),
@@ -181,8 +204,63 @@ public class ScenarioAudioServiceImpl implements ScenarioAudioService {
                 level,
                 stepNo,
                 userAudioUrl,
-                600
+                PRESIGNED_EXPIRES_IN
         );
+    }
+
+    private ScenarioAnswerAnalyzeResDTO toAnswerAnalyzeResponse(
+            ScenarioAnalysisResult analysisResult,
+            Scenario scenario,
+            Integer level,
+            Integer stepNo,
+            List<ScenarioAnswerAnalyzeResDTO.WordAnalysis> wordAnalysis
+    ) {
+        boolean isLastStep = stepNo.equals(3);
+        Integer nextStepNo = isLastStep ? null : stepNo + 1;
+
+        return new ScenarioAnswerAnalyzeResDTO(
+                analysisResult.getId(),
+                scenario.getId(),
+                level,
+                stepNo,
+                analysisResult.getPronunciationScore(),
+                analysisResult.getMeaningDeliveryScore(),
+                analysisResult.getSpeechRateScore(),
+                analysisResult.getSilenceRatio(),
+                analysisResult.getAiFeedback(),
+                isLastStep,
+                nextStepNo,
+                wordAnalysis
+        );
+    }
+
+    // 중복 요청 시 저장된 wordAnalysis JSON으로 응답 생성
+    private ScenarioAnswerAnalyzeResDTO toAnswerAnalyzeResponseWithSavedWordAnalysis(
+            ScenarioAnalysisResult analysisResult
+    ) {
+        try {
+            List<ScenarioAnswerAnalyzeResDTO.WordAnalysis> wordAnalysis =
+                    objectMapper.readValue(
+                            analysisResult.getWordAnalysisJson(),
+                            new TypeReference<List<ScenarioAnswerAnalyzeResDTO.WordAnalysis>>() {
+                            }
+                    );
+
+            ScenarioStep scenarioStep = analysisResult.getScenarioStep();
+            ScenarioLevel scenarioLevel = scenarioStep.getScenarioLevel();
+            Scenario scenario = scenarioLevel.getScenario();
+
+            return toAnswerAnalyzeResponse(
+                    analysisResult,
+                    scenario,
+                    scenarioLevel.getLevelNo(),
+                    scenarioStep.getStepNo(),
+                    wordAnalysis
+            );
+
+        } catch (Exception e) {
+            throw new CustomException(ScenarioErrorCode.SCENARIO_ANALYSIS_FAILED);
+        }
     }
 
     // level 값이 1~3 범위 내에 있는지 검증
@@ -199,62 +277,14 @@ public class ScenarioAudioServiceImpl implements ScenarioAudioService {
         }
     }
 
-    // 파일 검증 매서드
-    private void validateVoiceFile(MultipartFile voiceFile) {
-        if (voiceFile == null || voiceFile.isEmpty()) {
-            throw new CustomException(ScenarioErrorCode.AUDIO_FILE_REQUIRED);
-        }
-
-        String contentType = voiceFile.getContentType();
-
-        if (contentType == null ||
-                !(contentType.equals("audio/mpeg")
-                        || contentType.equals("audio/mp3")
-                        || contentType.equals("audio/wav")
-                        || contentType.equals("audio/webm")
-                        || contentType.equals("audio/x-m4a")
-                        || contentType.equals("audio/mp4"))) {
-            throw new CustomException(MySentenceErrorCode.UNSUPPORTED_AUDIO_FORMAT);
-        }
-    }
-
-    // AI 서버 응답이 정상이며 필수 분석 결과가 모두 포함되어 있는지 검증
     private void validateAiResponse(ScenarioPracticeAiResDTO aiResponse) {
         if (aiResponse == null || !Boolean.TRUE.equals(aiResponse.getSuccess())) {
             throw new CustomException(ScenarioErrorCode.SCENARIO_ANALYSIS_FAILED);
         }
-
-        if (aiResponse.getVoiceAnalysis() == null
-                || aiResponse.getVoiceAnalysis().getSpeechRate() == null
-                || aiResponse.getVoiceAnalysis().getSilenceRatio() == null
-                || aiResponse.getWordAnalysis() == null) {
-            throw new CustomException(ScenarioErrorCode.SCENARIO_ANALYSIS_FAILED);
-        }
     }
 
-    // json 변환
-    private String toJson(Object object) {
-        try {
-            return objectMapper.writeValueAsString(object);
-        } catch (Exception e) {
-            throw new CustomException(ScenarioErrorCode.SCENARIO_ANALYSIS_FAILED);
-        }
-    }
-
-    // 사용자 음성 파일을 S3에 업로드하고 저장된 객체 키를 반환
-    private String uploadVoiceFile(
-            Long memberId,
-            Long scenarioId,
-            Integer level,
-            Integer stepNo,
-            MultipartFile voiceFile
-    ) {
-        return s3AudioStorageService.upload(
-                "conversation/" + memberId,
-                "scenario-" + scenarioId
-                        + "-level-" + level
-                        + "-step-" + stepNo,
-                voiceFile
-        );
+    // 사용자 음성 저장 경로 prefix 생성 메서드
+    private String buildMemberAudioKeyPrefix(Long memberId) {
+        return MEMBER_AUDIO_PREFIX + "/" + memberId;
     }
 }

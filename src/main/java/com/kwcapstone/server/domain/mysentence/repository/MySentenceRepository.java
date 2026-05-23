@@ -11,5 +11,4 @@ public interface MySentenceRepository extends JpaRepository<MySentence, Long> {
     List<MySentence> findAllByMemberIdAndDeletedAtIsNullOrderByCreatedAtDesc(Long memberId);
     // 나만의 문장 삭제
     Optional<MySentence> findByIdAndDeletedAtIsNull(Long sentenceId);
-    boolean existsByIdAndMemberIdAndDeletedAtIsNull(Long sentenceId, Long memberId);
 }

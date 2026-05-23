@@ -1,9 +1,9 @@
 package com.kwcapstone.server.domain.scenario.client;
 
-import com.kwcapstone.server.domain.scenario.dto.request.ScenarioGenerateAiReqDTO;
-import com.kwcapstone.server.domain.scenario.dto.request.ScenarioPracticeAiReqDTO;
-import com.kwcapstone.server.domain.scenario.dto.response.ScenarioGenerateAiResDTO;
-import com.kwcapstone.server.domain.scenario.dto.response.ScenarioPracticeAiResDTO;
+import com.kwcapstone.server.domain.scenario.client.dto.request.ScenarioGenerateAiReqDTO;
+import com.kwcapstone.server.domain.scenario.client.dto.request.ScenarioPracticeAiReqDTO;
+import com.kwcapstone.server.domain.scenario.client.dto.response.ScenarioGenerateAiResDTO;
+import com.kwcapstone.server.domain.scenario.client.dto.response.ScenarioPracticeAiResDTO;
 import com.kwcapstone.server.domain.scenario.exception.code.ScenarioErrorCode;
 import com.kwcapstone.server.global.apiPayload.exception.CustomException;
 import lombok.RequiredArgsConstructor;

@@ -1,10 +1,10 @@
 package com.kwcapstone.server.domain.mysentence.client;
 
-import com.kwcapstone.server.domain.mysentence.dto.request.MySentenceTtsReqDTO;
-import com.kwcapstone.server.domain.mysentence.dto.request.PronunciationAnalyzeAiReqDTO;
-import com.kwcapstone.server.domain.mysentence.dto.response.PronunciationAnalyzeAiResDTO;
+import com.kwcapstone.server.domain.mysentence.client.dto.request.MySentenceTtsAiReqDTO;
+import com.kwcapstone.server.domain.mysentence.client.dto.request.PronunciationAnalyzeAiReqDTO;
+import com.kwcapstone.server.domain.mysentence.client.dto.response.PronunciationAnalyzeAiResDTO;
 
 public interface MySentenceAiClient {
-    byte[] requestTts(MySentenceTtsReqDTO request);  // TTS
+    byte[] requestTts(MySentenceTtsAiReqDTO request);  // TTS
     PronunciationAnalyzeAiResDTO analyzePronunciation(PronunciationAnalyzeAiReqDTO request);  // 발음 분석
 }

@@ -1,6 +1,7 @@
 package com.kwcapstone.server.domain.mysentence.converter;
 
 import com.kwcapstone.server.domain.member.entity.Member;
+import com.kwcapstone.server.domain.mysentence.client.dto.response.PronunciationAnalyzeAiResDTO;
 import com.kwcapstone.server.domain.mysentence.dto.request.MySentenceCreateReqDTO;
 import com.kwcapstone.server.domain.mysentence.dto.response.*;
 import com.kwcapstone.server.domain.mysentence.entity.MySentence;
@@ -49,9 +50,21 @@ public class MySentenceConverter {
         );
     }
 
+    public static List<MySentenceAnalyzeResDTO.WordAnalysis> toWordAnalysisResponse(
+            PronunciationAnalyzeAiResDTO aiResponse
+    ) {
+        return aiResponse.getWordAnalysis().stream()
+                .map(word -> new MySentenceAnalyzeResDTO.WordAnalysis(
+                        word.getRefChar(),
+                        word.getHypChar(),
+                        word.getGrade()
+                ))
+                .toList();
+    }
+
     public static MySentenceAnalyzeResDTO toAnalyzeResponse(
             MySentenceAnalysisResult result,
-            PronunciationAnalyzeAiResDTO aiResponse
+            List<MySentenceAnalyzeResDTO.WordAnalysis> wordAnalysis
     ) {
         return new MySentenceAnalyzeResDTO(
                 result.getId(),
@@ -60,13 +73,7 @@ public class MySentenceConverter {
                 result.getSpeechRateScore(),
                 result.getSilenceRatio(),
                 result.getAiFeedback(),
-                aiResponse.getWordAnalysis().stream()
-                        .map(word -> new MySentenceAnalyzeResDTO.WordAnalysis(
-                                word.getRefChar(),
-                                word.getHypChar(),
-                                word.getGrade()
-                        ))
-                        .toList()
+                wordAnalysis
         );
     }
 }

@@ -3,6 +3,7 @@ package com.kwcapstone.server.domain.mysentence.dto.response;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -20,6 +21,7 @@ public class MySentenceAnalyzeResDTO {
     private List<WordAnalysis> wordAnalysis;
 
     @Getter
+    @NoArgsConstructor
     @AllArgsConstructor
     public static class WordAnalysis {
         private String refChar;

@@ -1,11 +1,11 @@
-package com.kwcapstone.server.domain.mysentence.dto.response;
+package com.kwcapstone.server.domain.mysentence.client.dto.response;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 @Getter
 @AllArgsConstructor
-public class MySentenceTtsResDTO {
+public class MySentenceTtsAiResDTO {
     private Long sentenceId;
     private String sentenceContent;
     private String aiAudioUrl;

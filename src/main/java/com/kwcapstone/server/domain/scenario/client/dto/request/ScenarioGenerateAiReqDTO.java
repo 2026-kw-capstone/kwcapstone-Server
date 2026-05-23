@@ -1,4 +1,4 @@
-package com.kwcapstone.server.domain.scenario.dto.request;
+package com.kwcapstone.server.domain.scenario.client.dto.request;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

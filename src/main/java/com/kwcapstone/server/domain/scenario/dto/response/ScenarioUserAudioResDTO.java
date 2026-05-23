@@ -11,5 +11,5 @@ public class ScenarioUserAudioResDTO {
     private Integer level;
     private Integer stepNo;
     private String userAudioUrl;
-    private Integer expiresIn;
+    private Long expiresIn;
 }
