@@ -22,7 +22,8 @@ public class ScenarioPracticeAiResDTO {
     private BigDecimal pronunciationScore;
     private BigDecimal meaningDeliveryScore;
 
-    private String feedback;
+    private String meaningDeliveryFeedback;
+    private String pronunciationFeedback;
 
     private List<WordAnalysis> wordAnalysis;
 

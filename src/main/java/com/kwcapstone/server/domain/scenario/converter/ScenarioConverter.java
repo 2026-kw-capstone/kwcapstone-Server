@@ -163,7 +163,8 @@ public class ScenarioConverter {
                                 .getSilenceRatio()
                                 .getPausePercent()
                 )
-                .aiFeedback(aiResponse.getFeedback())
+                .meaningFeedback(aiResponse.getMeaningDeliveryFeedback())
+                .pronunciationFeedback(aiResponse.getPronunciationFeedback())
                 .wordAnalysisJson(wordAnalysisJson)
                 .build();
     }

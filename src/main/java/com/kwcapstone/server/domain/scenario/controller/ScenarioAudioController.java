@@ -19,7 +19,7 @@ public class ScenarioAudioController {
 
     private final ScenarioAudioService scenarioAudioService;
 
-    @Operation(summary = "녹음 파일 업로드 및 시나리오 음성 답변 분석")
+    @Operation(summary = "녹음 파일 업로드 및 음성 분석")
     @PostMapping(
             value = "/answers",
             consumes = MediaType.MULTIPART_FORM_DATA_VALUE
