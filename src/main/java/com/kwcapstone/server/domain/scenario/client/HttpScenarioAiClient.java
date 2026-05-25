@@ -2,6 +2,7 @@ package com.kwcapstone.server.domain.scenario.client;
 
 import com.kwcapstone.server.domain.scenario.client.dto.request.ScenarioGenerateAiReqDTO;
 import com.kwcapstone.server.domain.scenario.client.dto.request.ScenarioPracticeAiReqDTO;
+import com.kwcapstone.server.domain.scenario.client.dto.request.ScenarioRegenerateAiReqDTO;
 import com.kwcapstone.server.domain.scenario.client.dto.response.ScenarioGenerateAiResDTO;
 import com.kwcapstone.server.domain.scenario.client.dto.response.ScenarioPracticeAiResDTO;
 import com.kwcapstone.server.domain.scenario.exception.code.ScenarioErrorCode;
@@ -26,6 +27,19 @@ public class HttpScenarioAiClient implements ScenarioAiClient {
                     .body(ScenarioGenerateAiResDTO.class);
         } catch (Exception e) {
             throw new CustomException(ScenarioErrorCode.SCENARIO_GENERATION_FAILED);
+        }
+    }
+
+    @Override
+    public ScenarioGenerateAiResDTO regenerateScenarioStep(ScenarioRegenerateAiReqDTO request) {
+        try {
+            return aiRestClient.post()
+                    .uri("/regenerate-scenario-step")
+                    .body(request)
+                    .retrieve()
+                    .body(ScenarioGenerateAiResDTO.class);
+        } catch (Exception e) {
+            throw new CustomException(ScenarioErrorCode.SCENARIO_REGENERATION_FAILED);
         }
     }
 

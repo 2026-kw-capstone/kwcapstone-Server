@@ -2,6 +2,7 @@ package com.kwcapstone.server.domain.scenario.controller;
 
 import com.kwcapstone.server.domain.scenario.dto.request.ScenarioCreateReqDTO;
 import com.kwcapstone.server.domain.scenario.dto.response.ScenarioCreateResDTO;
+import com.kwcapstone.server.domain.scenario.dto.response.ScenarioRegenerateResDTO;
 import com.kwcapstone.server.domain.scenario.service.ScenarioCommandService;
 import com.kwcapstone.server.global.apiPayload.response.ApiResponse;
 import com.kwcapstone.server.global.apiPayload.response.SuccessCode;
@@ -22,6 +23,19 @@ public class ScenarioCommandController {
             @RequestBody ScenarioCreateReqDTO request
     ) {
         ScenarioCreateResDTO result = scenarioCommandService.createScenario(request);
+
+        return ApiResponse.onSuccess(result, SuccessCode.OK);
+    }
+
+    @Operation(summary = "시나리오 단계 재생성")
+    @PostMapping("/{scenarioId}/levels/{level}/steps/{stepNo}/regenerate")
+    public ApiResponse<ScenarioRegenerateResDTO> regenerateScenarioStep(
+            @PathVariable Long scenarioId,
+            @PathVariable Integer level,
+            @PathVariable Integer stepNo
+    ) {
+        ScenarioRegenerateResDTO result =
+                scenarioCommandService.regenerateScenarioStep(scenarioId, level, stepNo);
 
         return ApiResponse.onSuccess(result, SuccessCode.OK);
     }
