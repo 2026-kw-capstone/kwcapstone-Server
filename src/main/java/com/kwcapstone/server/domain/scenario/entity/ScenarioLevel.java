@@ -41,4 +41,9 @@ public class ScenarioLevel extends BaseEntity {
         this.steps.add(step);
         step.setScenarioLevel(this);
     }
+
+    public void updateContent(String levelTitle, String levelDescription) {
+        this.levelTitle = levelTitle;
+        this.levelDescription = levelDescription;
+    }
 }

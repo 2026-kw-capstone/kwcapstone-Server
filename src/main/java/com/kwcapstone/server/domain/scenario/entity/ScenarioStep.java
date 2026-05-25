@@ -32,4 +32,14 @@ public class ScenarioStep extends BaseEntity {
     public void setScenarioLevel(ScenarioLevel scenarioLevel) {
         this.scenarioLevel = scenarioLevel;
     }
+
+    public void updateContent(
+            String stepName,
+            String assistantMessage,
+            String userIntent
+    ) {
+        this.stepName = stepName;
+        this.assistantMessage = assistantMessage;
+        this.userIntent = userIntent;
+    }
 }
