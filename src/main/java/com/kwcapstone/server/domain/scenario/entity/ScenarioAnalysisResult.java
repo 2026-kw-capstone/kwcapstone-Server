@@ -49,8 +49,11 @@ public class ScenarioAnalysisResult extends BaseEntity {
     @Column(name = "silence_ratio", precision = 5, scale = 2)
     private BigDecimal silenceRatio;
 
-    @Column(name = "ai_feedback", columnDefinition = "TEXT")
-    private String aiFeedback;
+    @Column(name = "meaning_feedback", columnDefinition = "TEXT")
+    private String meaningFeedback;
+
+    @Column(name = "pronunciation_feedback", columnDefinition = "TEXT")
+    private String pronunciationFeedback;
 
     @Column(name = "word_analysis_json", nullable = false, columnDefinition = "TEXT")
     private String wordAnalysisJson;

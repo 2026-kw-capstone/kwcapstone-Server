@@ -17,12 +17,13 @@ public class ScenarioAnswerAnalyzeResDTO {
     private Integer level;
     private Integer stepNo;
 
-    private BigDecimal pronunciationScore;
     private BigDecimal meaningDeliveryScore;
+    private String meaningFeedback;
+
+    private BigDecimal pronunciationScore;
     private BigDecimal speechRateScore;
     private BigDecimal silenceRatio;
-
-    private String feedback;
+    private String pronunciationFeedback;
 
     private Boolean isLastStep;
     private Integer nextStepNo;
