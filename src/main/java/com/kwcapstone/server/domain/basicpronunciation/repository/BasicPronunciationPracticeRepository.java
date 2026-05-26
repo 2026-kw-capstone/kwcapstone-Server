@@ -25,4 +25,6 @@ public interface BasicPronunciationPracticeRepository extends JpaRepository<Basi
             @Param("start") LocalDateTime start,
             @Param("end") LocalDateTime end
     );
+
+    long countByMemberIdAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(Long memberId, LocalDateTime start, LocalDateTime end);
 }

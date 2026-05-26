@@ -1,6 +1,7 @@
 package com.kwcapstone.server.domain.report.controller;
 
 import com.kwcapstone.server.domain.report.dto.response.PronunciationAccuracyReportResDTO;
+import com.kwcapstone.server.domain.report.dto.response.WeeklyStampsReportResDTO;
 import com.kwcapstone.server.domain.report.service.ReportService;
 import com.kwcapstone.server.global.apiPayload.response.ApiResponse;
 import com.kwcapstone.server.global.apiPayload.response.SuccessCode;
@@ -25,6 +26,16 @@ public class ReportController {
             @RequestParam(required = false) String baseDate
     ) {
         PronunciationAccuracyReportResDTO result = reportService.getPronunciationAccuracy(period, type, baseDate);
+
+        return ApiResponse.onSuccess(result, SuccessCode.OK);
+    }
+
+    @Operation(summary = "위클리 스탬프 조회")
+    @GetMapping("/weekly-stamps")
+    public ApiResponse<WeeklyStampsReportResDTO> getWeeklyStamps(
+            @RequestParam(required = false) String baseDate
+    ) {
+        WeeklyStampsReportResDTO result = reportService.getWeeklyStamps(baseDate);
 
         return ApiResponse.onSuccess(result, SuccessCode.OK);
     }

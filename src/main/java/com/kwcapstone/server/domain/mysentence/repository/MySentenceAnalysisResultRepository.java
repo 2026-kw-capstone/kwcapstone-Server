@@ -24,4 +24,6 @@ public interface MySentenceAnalysisResultRepository extends JpaRepository<MySent
             @Param("start") LocalDateTime start,
             @Param("end") LocalDateTime end
     );
+
+    long countByMemberIdAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(Long memberId, LocalDateTime start, LocalDateTime end);
 }

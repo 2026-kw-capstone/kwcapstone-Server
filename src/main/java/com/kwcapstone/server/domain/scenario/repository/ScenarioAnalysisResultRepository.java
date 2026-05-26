@@ -28,6 +28,8 @@ public interface ScenarioAnalysisResultRepository extends JpaRepository<Scenario
             @Param("end") LocalDateTime end
     );
 
+    long countByMemberIdAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(Long memberId, LocalDateTime start, LocalDateTime end);
+
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("""
             delete from ScenarioAnalysisResult result
