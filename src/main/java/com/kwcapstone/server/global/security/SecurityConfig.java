@@ -67,6 +67,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/warmups/**").authenticated()
                         .requestMatchers("/api/messages/**").authenticated()
                         .requestMatchers("/api/conversations/**").authenticated()
+                        .requestMatchers("/api/reports/**").authenticated()
                         .requestMatchers("/api/mypage/**").authenticated()
 
                         // 나머지
