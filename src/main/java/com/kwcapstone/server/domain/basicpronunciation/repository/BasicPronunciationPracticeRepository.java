@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
@@ -27,4 +28,17 @@ public interface BasicPronunciationPracticeRepository extends JpaRepository<Basi
     );
 
     long countByMemberIdAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(Long memberId, LocalDateTime start, LocalDateTime end);
+
+    @Query("""
+        select coalesce(sum(p.accuracyScore), 0)
+        from BasicPronunciationPractice p
+        where p.member.id = :memberId
+            and p.createdAt >= :start
+            and p.createdAt < :end
+    """)
+    BigDecimal sumAccuracyScore(
+            @Param("memberId") Long memberId,
+            @Param("start") LocalDateTime start,
+            @Param("end") LocalDateTime end
+    );
 }

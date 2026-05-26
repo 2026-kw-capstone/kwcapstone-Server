@@ -2,6 +2,7 @@ package com.kwcapstone.server.domain.report.service;
 
 import com.kwcapstone.server.domain.basicpronunciation.repository.BasicPronunciationPracticeRepository;
 import com.kwcapstone.server.domain.mysentence.repository.MySentenceAnalysisResultRepository;
+import com.kwcapstone.server.domain.report.dto.response.AchievementTrendReportResDTO;
 import com.kwcapstone.server.domain.report.dto.response.PronunciationAccuracyReportResDTO;
 import com.kwcapstone.server.domain.report.dto.response.WeeklyStampsReportResDTO;
 import com.kwcapstone.server.domain.report.enums.ReportPeriod;
@@ -147,6 +148,185 @@ public class ReportServiceImpl implements ReportService {
         );
     }
 
+    @Override
+    public AchievementTrendReportResDTO getAchievementTrend(String period, String baseDate) {
+        Long memberId = SecurityUtil.getCurrentMemberId();
+
+        ReportPeriod reportPeriod = ReportPeriod.from(period);
+        LocalDate referenceDate = parseBaseDate(baseDate);
+
+        List<DateRangeWithLabel> ranges = calculateTrendRanges(reportPeriod, referenceDate);
+        List<AchievementTrendReportResDTO.Point> points = new ArrayList<>();
+
+        for (DateRangeWithLabel range : ranges) {
+            BigDecimal pronunciationAccuracy = calculateTotalPronunciationAverage(
+                    memberId,
+                    range.dateRange()
+            );
+
+            BigDecimal meaningDeliveryRate = findAverageMeaningDeliveryScore(
+                    memberId,
+                    range.dateRange()
+            );
+
+            points.add(
+                    new AchievementTrendReportResDTO.Point(
+                            range.label(),
+                            range.dateRange().startDate(),
+                            range.dateRange().endExclusiveDate().minusDays(1),
+                            pronunciationAccuracy,
+                            meaningDeliveryRate,
+                            pronunciationAccuracy != null,
+                            meaningDeliveryRate != null
+                    )
+            );
+        }
+
+        LocalDate startDate = ranges.get(0).dateRange().startDate();
+        LocalDate endDate = ranges.get(ranges.size() - 1)
+                .dateRange()
+                .endExclusiveDate()
+                .minusDays(1);
+
+        return new AchievementTrendReportResDTO(
+                reportPeriod.name(),
+                startDate,
+                endDate,
+                points
+        );
+    }
+
+    private List<DateRangeWithLabel> calculateTrendRanges(ReportPeriod period, LocalDate baseDate) {
+        if (period == ReportPeriod.WEEK) {
+            return calculateWeeklyTrendRanges(baseDate);
+        }
+
+        return calculateMonthlyTrendRanges(baseDate);
+    }
+
+    private List<DateRangeWithLabel> calculateWeeklyTrendRanges(LocalDate baseDate) {
+        LocalDate weekStartDate = baseDate.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+
+        List<DateRangeWithLabel> ranges = new ArrayList<>();
+
+        for (int i = 0; i < 7; i++) {
+            LocalDate date = weekStartDate.plusDays(i);
+
+            ranges.add(
+                    new DateRangeWithLabel(
+                            toDayLabel(date.getDayOfWeek()),
+                            new DateRange(date, date.plusDays(1))
+                    )
+            );
+        }
+
+        return ranges;
+    }
+
+    private List<DateRangeWithLabel> calculateMonthlyTrendRanges(LocalDate baseDate) {
+        LocalDate monthStartDate = baseDate.withDayOfMonth(1);
+        LocalDate nextMonthStartDate = monthStartDate.plusMonths(1);
+
+        List<DateRangeWithLabel> ranges = new ArrayList<>();
+
+        for (int i = 0; i < 4; i++) {
+            LocalDate startDate = monthStartDate.plusDays(i * 7L);
+            LocalDate endExclusiveDate;
+
+            if (i == 3) {
+                endExclusiveDate = nextMonthStartDate;
+            } else {
+                endExclusiveDate = startDate.plusDays(7);
+            }
+
+            ranges.add(
+                    new DateRangeWithLabel(
+                            (i + 1) + "주차",
+                            new DateRange(startDate, endExclusiveDate)
+                    )
+            );
+        }
+
+        return ranges;
+    }
+
+    private BigDecimal calculateTotalPronunciationAverage(Long memberId, DateRange range) {
+        LocalDateTime start = range.startDate().atStartOfDay();
+        LocalDateTime end = range.endExclusiveDate().atStartOfDay();
+
+        BigDecimal basicSum = basicPronunciationPracticeRepository.sumAccuracyScore(
+                memberId,
+                start,
+                end
+        );
+
+        BigDecimal mySentenceSum = mySentenceAnalysisResultRepository.sumPronunciationScore(
+                memberId,
+                start,
+                end
+        );
+
+        BigDecimal scenarioSum = scenarioAnalysisResultRepository.sumPronunciationScore(
+                memberId,
+                start,
+                end
+        );
+
+        long basicCount = basicPronunciationPracticeRepository
+                .countByMemberIdAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(
+                        memberId,
+                        start,
+                        end
+                );
+
+        long mySentenceCount = mySentenceAnalysisResultRepository
+                .countByMemberIdAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(
+                        memberId,
+                        start,
+                        end
+                );
+
+        long scenarioCount = scenarioAnalysisResultRepository
+                .countByMemberIdAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(
+                        memberId,
+                        start,
+                        end
+                );
+
+        long totalCount = basicCount + mySentenceCount + scenarioCount;
+
+        if (totalCount == 0) {
+            return null;
+        }
+
+        BigDecimal totalSum = nullToZero(basicSum)
+                .add(nullToZero(mySentenceSum))
+                .add(nullToZero(scenarioSum));
+
+        return totalSum.divide(
+                BigDecimal.valueOf(totalCount),
+                2,
+                RoundingMode.HALF_UP
+        );
+    }
+
+    private BigDecimal findAverageMeaningDeliveryScore(Long memberId, DateRange range) {
+        LocalDateTime start = range.startDate().atStartOfDay();
+        LocalDateTime end = range.endExclusiveDate().atStartOfDay();
+
+        Double average = scenarioAnalysisResultRepository.findAverageMeaningDeliveryScore(
+                memberId,
+                start,
+                end
+        );
+
+        if (average == null) {
+            return null;
+        }
+
+        return  BigDecimal.valueOf(average).setScale(2, RoundingMode.HALF_UP);
+    }
+
     private LocalDate parseBaseDate(String baseDate) {
         if (baseDate == null || baseDate.isBlank()) {
             return LocalDate.now();
@@ -231,6 +411,14 @@ public class ReportServiceImpl implements ReportService {
         );
     }
 
+    private BigDecimal nullToZero(BigDecimal value) {
+        if (value == null) {
+            return BigDecimal.ZERO;
+        }
+
+        return value;
+    }
+
     private String toDayLabel(DayOfWeek dayOfWeek) {
         return switch (dayOfWeek) {
             case MONDAY -> "월";
@@ -246,5 +434,10 @@ public class ReportServiceImpl implements ReportService {
     private record DateRange(
             LocalDate startDate,
             LocalDate endExclusiveDate
+    ) {}
+
+    private record DateRangeWithLabel(
+            String label,
+            DateRange dateRange
     ) {}
 }

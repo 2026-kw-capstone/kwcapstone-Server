@@ -1,5 +1,6 @@
 package com.kwcapstone.server.domain.report.controller;
 
+import com.kwcapstone.server.domain.report.dto.response.AchievementTrendReportResDTO;
 import com.kwcapstone.server.domain.report.dto.response.PronunciationAccuracyReportResDTO;
 import com.kwcapstone.server.domain.report.dto.response.WeeklyStampsReportResDTO;
 import com.kwcapstone.server.domain.report.service.ReportService;
@@ -36,6 +37,17 @@ public class ReportController {
             @RequestParam(required = false) String baseDate
     ) {
         WeeklyStampsReportResDTO result = reportService.getWeeklyStamps(baseDate);
+
+        return ApiResponse.onSuccess(result, SuccessCode.OK);
+    }
+
+    @Operation(summary = "학습 성취도 추이 조회")
+    @GetMapping("/achievement-trend")
+    public ApiResponse<AchievementTrendReportResDTO> getAchievementTrend(
+            @RequestParam String period,
+            @RequestParam(required = false) String baseDate
+    ) {
+        AchievementTrendReportResDTO result = reportService.getAchievementTrend(period, baseDate);
 
         return ApiResponse.onSuccess(result, SuccessCode.OK);
     }
