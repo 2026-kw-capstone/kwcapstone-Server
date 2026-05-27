@@ -9,6 +9,7 @@ import com.kwcapstone.server.domain.auth.service.AuthService;
 import com.kwcapstone.server.global.apiPayload.response.ApiResponse;
 import com.kwcapstone.server.global.apiPayload.response.SuccessCode;
 import com.kwcapstone.server.global.util.CookieUtil;
+import io.swagger.v3.oas.annotations.Operation;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +23,7 @@ public class AuthController {
     private final CookieUtil cookieUtil;
 
     // 회원가입
+    @Operation(summary = "회원가입")
     @PostMapping("/signup")
     public ApiResponse<AuthSignUpResDTO> signup(
             @RequestBody @Valid AuthSignUpReqDTO request
@@ -32,6 +34,7 @@ public class AuthController {
     }
 
     // 로그인
+    @Operation(summary = "로그인")
     @PostMapping("/login")
     public ApiResponse<AuthLoginResDTO> login(
             @RequestBody @Valid AuthLoginReqDTO request,
@@ -56,6 +59,7 @@ public class AuthController {
      * 5. 새 refreshToken은 쿠키로 재설정 (Refresh Token Rotation)
      * 6. 새 accessToken은 JSON 응답으로 반환
      */
+    @Operation(summary = "액세스 토큰 재발급")
     @PostMapping("/reissue")
     public ApiResponse<AuthReissueResDTO> reissue(
             @CookieValue(value = "refreshToken", required = false) String refreshToken,
@@ -72,6 +76,7 @@ public class AuthController {
     }
 
     // 로그아웃
+    @Operation(summary = "로그아웃")
     @PostMapping("/logout")
     public ApiResponse<Void> logout(HttpServletResponse response) {
         authService.logout();

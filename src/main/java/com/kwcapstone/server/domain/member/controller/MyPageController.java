@@ -6,6 +6,7 @@ import com.kwcapstone.server.domain.member.dto.response.UpdateNicknameResDTO;
 import com.kwcapstone.server.domain.member.service.MyPageService;
 import com.kwcapstone.server.global.apiPayload.response.ApiResponse;
 import com.kwcapstone.server.global.apiPayload.response.SuccessCode;
+import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 public class MyPageController {
     private final MyPageService myPageService;
 
+    @Operation(summary = "내 프로필 조회")
     @GetMapping("/me")
     public ApiResponse<MyPageMeResDTO> getMyInfo() {
         MyPageMeResDTO result = myPageService.getMyInfo();
@@ -23,6 +25,7 @@ public class MyPageController {
         return ApiResponse.onSuccess(result, SuccessCode.OK);
     }
 
+    @Operation(summary = "닉네임 변경")
     @PatchMapping("/me/nickname")
     public ApiResponse<UpdateNicknameResDTO> updateNickname(
             @RequestBody @Valid UpdateNicknameReqDTO request
