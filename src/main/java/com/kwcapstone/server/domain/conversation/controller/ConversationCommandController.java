@@ -5,6 +5,7 @@ import com.kwcapstone.server.domain.conversation.dto.response.ConversationTitleU
 import com.kwcapstone.server.domain.conversation.service.ConversationCommandService;
 import com.kwcapstone.server.global.apiPayload.response.ApiResponse;
 import com.kwcapstone.server.global.apiPayload.response.SuccessCode;
+import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 public class ConversationCommandController {
     private final ConversationCommandService conversationCommandService;
 
+    @Operation(summary = "대화 이름 수정")
     @PatchMapping("/{conversationId}")
     public ApiResponse<ConversationTitleUpdateResDTO> updateConversationTitle(
             @PathVariable Long conversationId,
@@ -26,6 +28,7 @@ public class ConversationCommandController {
         return ApiResponse.onSuccess(result, SuccessCode.OK);
     }
 
+    @Operation(summary = "대화 삭제")
     @DeleteMapping("/{conversationId}")
     public ApiResponse<Void> deleteConversation(
             @PathVariable Long conversationId

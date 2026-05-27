@@ -7,6 +7,7 @@ import com.kwcapstone.server.domain.conversation.dto.response.MessageVoiceUrlRes
 import com.kwcapstone.server.domain.conversation.service.ConversationMessageService;
 import com.kwcapstone.server.global.apiPayload.response.ApiResponse;
 import com.kwcapstone.server.global.apiPayload.response.SuccessCode;
+import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 public class ConversationMessageController {
     private final ConversationMessageService conversationMessageService;
 
+    @Operation(summary = "메시지 전송(텍스트)")
     @PostMapping("/text")
     public ApiResponse<MessageSendResDTO> sendTextMessage(
             @RequestBody @Valid TextMessageSendReqDTO request
@@ -27,6 +29,7 @@ public class ConversationMessageController {
         return ApiResponse.onSuccess(result, SuccessCode.CREATED, request.getClientRequestId());
     }
 
+    @Operation(summary = "메시지 전송(오디오)")
     @PostMapping(value = "/voice", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ApiResponse<MessageSendResDTO> sendVoiceMessage(
             @ModelAttribute @Valid VoiceMessageSendReqDTO request
@@ -36,6 +39,7 @@ public class ConversationMessageController {
         return ApiResponse.onSuccess(result, SuccessCode.CREATED, request.getClientRequestId());
     }
 
+    @Operation(summary = "음성 메시지 재생")
     @GetMapping("/{messageId}/voice")
     public ApiResponse<MessageVoiceUrlResDTO> getMessageVoiceUrl(
             @PathVariable Long messageId

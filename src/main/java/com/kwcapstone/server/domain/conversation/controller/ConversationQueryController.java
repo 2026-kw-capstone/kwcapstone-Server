@@ -5,6 +5,7 @@ import com.kwcapstone.server.domain.conversation.dto.response.ConversationListIt
 import com.kwcapstone.server.domain.conversation.service.ConversationQueryService;
 import com.kwcapstone.server.global.apiPayload.response.ApiResponse;
 import com.kwcapstone.server.global.apiPayload.response.SuccessCode;
+import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -19,6 +20,7 @@ import java.util.List;
 public class ConversationQueryController {
     private final ConversationQueryService conversationQueryService;
 
+    @Operation(summary = "대화 목록 조회")
     @GetMapping
     public ApiResponse<List<ConversationListItemResDTO>> getConversations() {
         List<ConversationListItemResDTO> result = conversationQueryService.getConversations();
@@ -26,6 +28,7 @@ public class ConversationQueryController {
         return ApiResponse.onSuccess(result, SuccessCode.OK);
     }
 
+    @Operation(summary = "대화 내용 조회")
     @GetMapping("/{conversationId}")
     public ApiResponse<ConversationDetailResDTO> getConversationDetail(
             @PathVariable Long conversationId
