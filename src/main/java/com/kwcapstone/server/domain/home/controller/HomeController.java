@@ -1,5 +1,6 @@
 package com.kwcapstone.server.domain.home.controller;
 
+import com.kwcapstone.server.domain.home.dto.response.ContinueLearningResDTO;
 import com.kwcapstone.server.domain.home.dto.response.WeeklySummaryResDTO;
 import com.kwcapstone.server.domain.home.service.HomeService;
 import com.kwcapstone.server.global.apiPayload.response.ApiResponse;
@@ -15,6 +16,14 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/home")
 public class HomeController {
     private final HomeService homeQueryService;
+
+    @Operation(summary = "이어서 학습하기")
+    @GetMapping("/continue-learning")
+    public ApiResponse<ContinueLearningResDTO> getContinueLearning() {
+        ContinueLearningResDTO result = homeQueryService.getContinueLearning();
+
+        return ApiResponse.onSuccess(result, SuccessCode.OK);
+    }
 
     @Operation(summary = "이번 주 요약")
     @GetMapping("/weekly-summary")

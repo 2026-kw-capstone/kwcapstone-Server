@@ -13,6 +13,7 @@ import java.util.Optional;
 public interface BasicPronunciationPracticeRepository extends JpaRepository<BasicPronunciationPractice, Long> {
     Optional<BasicPronunciationPractice> findByMemberIdAndClientRequestId(Long memberId, String clientRequestId);
     Optional<BasicPronunciationPractice> findTopByMemberIdAndTargetVowelOrderByCreatedAtDesc(Long memberId, BasicVowel targetVowel);
+    Optional<BasicPronunciationPractice> findTopByMemberIdOrderByCreatedAtDesc(Long memberId);
     long countByMemberIdAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(Long memberId, LocalDateTime startAt, LocalDateTime endAt);
 
     @Query("""
