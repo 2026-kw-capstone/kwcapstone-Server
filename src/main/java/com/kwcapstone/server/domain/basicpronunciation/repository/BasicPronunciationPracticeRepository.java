@@ -13,6 +13,20 @@ import java.util.Optional;
 public interface BasicPronunciationPracticeRepository extends JpaRepository<BasicPronunciationPractice, Long> {
     Optional<BasicPronunciationPractice> findByMemberIdAndClientRequestId(Long memberId, String clientRequestId);
     Optional<BasicPronunciationPractice> findTopByMemberIdAndTargetVowelOrderByCreatedAtDesc(Long memberId, BasicVowel targetVowel);
+    long countByMemberIdAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(Long memberId, LocalDateTime startAt, LocalDateTime endAt);
+
+    @Query("""
+            select sum(practice.accuracyScore)
+            from BasicPronunciationPractice practice
+            where practice.member.id = :memberId
+            and practice.createdAt >= :startAt
+            and practice.createdAt < :endAt
+            """)
+    BigDecimal sumAccuracyScoreByMemberIdAndPeriod(
+            @Param("memberId") Long memberId,
+            @Param("startAt") LocalDateTime startAt,
+            @Param("endAt") LocalDateTime endAt
+    );
 
     @Query("""
         select avg(p.accuracyScore)
@@ -26,8 +40,6 @@ public interface BasicPronunciationPracticeRepository extends JpaRepository<Basi
             @Param("start") LocalDateTime start,
             @Param("end") LocalDateTime end
     );
-
-    long countByMemberIdAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(Long memberId, LocalDateTime start, LocalDateTime end);
 
     @Query("""
         select coalesce(sum(p.accuracyScore), 0)

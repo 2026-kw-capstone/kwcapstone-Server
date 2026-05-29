@@ -12,6 +12,20 @@ import java.util.Optional;
 public interface MySentenceAnalysisResultRepository extends JpaRepository<MySentenceAnalysisResult, Long> {
     Optional<MySentenceAnalysisResult> findTopByMySentenceIdAndMemberIdOrderByCreatedAtDesc(Long mySentenceId, Long memberId);
     Optional<MySentenceAnalysisResult> findByMemberIdAndClientRequestId(Long memberId, String clientRequestId);
+    long countByMemberIdAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(Long memberId, LocalDateTime startAt, LocalDateTime endAt);
+
+    @Query("""
+            select sum(result.pronunciationScore)
+            from MySentenceAnalysisResult result
+            where result.member.id = :memberId
+            and result.createdAt >= :startAt
+            and result.createdAt < :endAt
+            """)
+    BigDecimal sumPronunciationScoreByMemberIdAndPeriod(
+            @Param("memberId") Long memberId,
+            @Param("startAt") LocalDateTime startAt,
+            @Param("endAt") LocalDateTime endAt
+    );
 
     @Query("""
         select avg(r.pronunciationScore)
@@ -25,8 +39,6 @@ public interface MySentenceAnalysisResultRepository extends JpaRepository<MySent
             @Param("start") LocalDateTime start,
             @Param("end") LocalDateTime end
     );
-
-    long countByMemberIdAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(Long memberId, LocalDateTime start, LocalDateTime end);
 
     @Query("""
         select coalesce(sum(r.pronunciationScore), 0)
