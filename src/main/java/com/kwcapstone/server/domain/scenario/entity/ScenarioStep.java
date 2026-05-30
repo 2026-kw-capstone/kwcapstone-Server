@@ -4,6 +4,8 @@ import com.kwcapstone.server.global.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -29,6 +31,9 @@ public class ScenarioStep extends BaseEntity {
     @Column(name = "user_intent", nullable = false, length = 255)
     private String userIntent;
 
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
+
     public void setScenarioLevel(ScenarioLevel scenarioLevel) {
         this.scenarioLevel = scenarioLevel;
     }
@@ -41,5 +46,9 @@ public class ScenarioStep extends BaseEntity {
         this.stepName = stepName;
         this.assistantMessage = assistantMessage;
         this.userIntent = userIntent;
+    }
+
+    public void softDelete() {
+        this.deletedAt = LocalDateTime.now();
     }
 }

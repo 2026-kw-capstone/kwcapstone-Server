@@ -39,7 +39,7 @@ public class ScenarioQueryServiceImpl implements ScenarioQueryService {
         Long memberId = SecurityUtil.getCurrentMemberId();
 
         List<Scenario> scenarios =
-                scenarioRepository.findAllByMemberIdOrderByCreatedAtDesc(memberId);
+                scenarioRepository.findAllByMemberIdAndDeletedAtIsNullOrderByCreatedAtDesc(memberId);
 
         return ScenarioConverter.toListResponse(scenarios);
     }
@@ -48,7 +48,7 @@ public class ScenarioQueryServiceImpl implements ScenarioQueryService {
     public ScenarioDetailResDTO getScenarioDetail(Long scenarioId) {
         Long memberId = SecurityUtil.getCurrentMemberId();
 
-        Scenario scenario = scenarioRepository.findById(scenarioId)
+        Scenario scenario = scenarioRepository.findByIdAndDeletedAtIsNull(scenarioId)
                 .orElseThrow(() -> new CustomException(ScenarioErrorCode.SCENARIO_NOT_FOUND));
 
         if (!scenario.getMember().getId().equals(memberId)) {
@@ -56,7 +56,7 @@ public class ScenarioQueryServiceImpl implements ScenarioQueryService {
         }
 
         List<ScenarioLevel> levels =
-                scenarioLevelRepository.findAllByScenarioIdOrderByLevelNoAsc(scenarioId);
+                scenarioLevelRepository.findAllByScenarioIdAndDeletedAtIsNullOrderByLevelNoAsc(scenarioId);
 
         return ScenarioConverter.toDetailResponse(scenario, levels);
     }
@@ -72,7 +72,7 @@ public class ScenarioQueryServiceImpl implements ScenarioQueryService {
 
         Long memberId = SecurityUtil.getCurrentMemberId();
 
-        Scenario scenario = scenarioRepository.findById(scenarioId)
+        Scenario scenario = scenarioRepository.findByIdAndDeletedAtIsNull(scenarioId)
                 .orElseThrow(() -> new CustomException(ScenarioErrorCode.SCENARIO_NOT_FOUND));
 
         if (!scenario.getMember().getId().equals(memberId)) {
@@ -80,17 +80,17 @@ public class ScenarioQueryServiceImpl implements ScenarioQueryService {
         }
 
         ScenarioLevel scenarioLevel = scenarioLevelRepository
-                .findByScenarioIdAndLevelNo(scenarioId, level)
+                .findByScenarioIdAndLevelNoAndDeletedAtIsNull(scenarioId, level)
                 .orElseThrow(() -> new CustomException(ScenarioErrorCode.SCENARIO_STEP_NOT_FOUND));
 
         ScenarioStep scenarioStep = scenarioStepRepository
-                .findByScenarioLevelIdAndStepNo(scenarioLevel.getId(), stepNo)
+                .findByScenarioLevelIdAndStepNoAndDeletedAtIsNull(scenarioLevel.getId(), stepNo)
                 .orElseThrow(() -> new CustomException(ScenarioErrorCode.SCENARIO_STEP_NOT_FOUND));
 
-        Long totalStepCount = scenarioStepRepository.countByScenarioLevelId(scenarioLevel.getId());
+        Long totalStepCount = scenarioStepRepository.countByScenarioLevelIdAndDeletedAtIsNull(scenarioLevel.getId());
 
         Boolean isAnswered = scenarioAnalysisResultRepository
-                .existsByScenarioStepIdAndMemberId(scenarioStep.getId(), memberId);
+                .existsByScenarioStepIdAndMemberIdAndDeletedAtIsNull(scenarioStep.getId(), memberId);
 
         return ScenarioConverter.toStepDetailResponse(
                 scenario,
@@ -110,7 +110,7 @@ public class ScenarioQueryServiceImpl implements ScenarioQueryService {
 
         Long memberId = SecurityUtil.getCurrentMemberId();
 
-        Scenario scenario = scenarioRepository.findById(scenarioId)
+        Scenario scenario = scenarioRepository.findByIdAndDeletedAtIsNull(scenarioId)
                 .orElseThrow(() -> new CustomException(ScenarioErrorCode.SCENARIO_NOT_FOUND));
 
         if (!scenario.getMember().getId().equals(memberId)) {
@@ -118,11 +118,11 @@ public class ScenarioQueryServiceImpl implements ScenarioQueryService {
         }
 
         ScenarioLevel scenarioLevel = scenarioLevelRepository
-                .findByScenarioIdAndLevelNo(scenarioId, level)
+                .findByScenarioIdAndLevelNoAndDeletedAtIsNull(scenarioId, level)
                 .orElseThrow(() -> new CustomException(ScenarioErrorCode.SCENARIO_RESULT_NOT_FOUND));
 
         List<ScenarioStep> steps =
-                scenarioStepRepository.findAllByScenarioLevelIdOrderByStepNoAsc(
+                scenarioStepRepository.findAllByScenarioLevelIdAndDeletedAtIsNullOrderByStepNoAsc(
                         scenarioLevel.getId()
                 );
 
@@ -132,7 +132,7 @@ public class ScenarioQueryServiceImpl implements ScenarioQueryService {
 
         List<ScenarioAnalysisResult> results = steps.stream()
                 .map(step -> scenarioAnalysisResultRepository
-                        .findTopByScenarioStepIdAndMemberIdOrderByCreatedAtDesc(
+                        .findTopByScenarioStepIdAndMemberIdAndDeletedAtIsNullOrderByCreatedAtDesc(
                                 step.getId(),
                                 memberId
                         )

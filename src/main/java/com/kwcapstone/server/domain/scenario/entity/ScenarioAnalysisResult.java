@@ -6,6 +6,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 @Entity
 @Getter
@@ -57,4 +58,11 @@ public class ScenarioAnalysisResult extends BaseEntity {
 
     @Column(name = "word_analysis_json", nullable = false, columnDefinition = "TEXT")
     private String wordAnalysisJson;
+
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
+
+    public void softDelete() {
+        this.deletedAt = LocalDateTime.now();
+    }
 }

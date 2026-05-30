@@ -5,6 +5,7 @@ import com.kwcapstone.server.global.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -37,8 +38,15 @@ public class Scenario extends BaseEntity {
     @OneToMany(mappedBy = "scenario", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ScenarioLevel> levels = new ArrayList<>();
 
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
+
     public void addLevel(ScenarioLevel level) {
         this.levels.add(level);
         level.setScenario(this);
+    }
+
+    public void softDelete() {
+        this.deletedAt = LocalDateTime.now();
     }
 }

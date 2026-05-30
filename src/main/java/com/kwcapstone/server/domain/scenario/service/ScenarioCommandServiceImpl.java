@@ -9,6 +9,7 @@ import com.kwcapstone.server.domain.scenario.client.dto.response.ScenarioGenerat
 import com.kwcapstone.server.domain.scenario.converter.ScenarioConverter;
 import com.kwcapstone.server.domain.scenario.dto.request.ScenarioCreateReqDTO;
 import com.kwcapstone.server.domain.scenario.dto.response.ScenarioCreateResDTO;
+import com.kwcapstone.server.domain.scenario.dto.response.ScenarioDeleteResDTO;
 import com.kwcapstone.server.domain.scenario.dto.response.ScenarioRegenerateResDTO;
 import com.kwcapstone.server.domain.scenario.entity.Scenario;
 import com.kwcapstone.server.domain.scenario.entity.ScenarioLevel;
@@ -25,6 +26,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -85,7 +87,7 @@ public class ScenarioCommandServiceImpl implements ScenarioCommandService {
 
         Long memberId = SecurityUtil.getCurrentMemberId();
 
-        Scenario scenario = scenarioRepository.findById(scenarioId)
+        Scenario scenario = scenarioRepository.findByIdAndDeletedAtIsNull(scenarioId)
                 .orElseThrow(() -> new CustomException(ScenarioErrorCode.SCENARIO_NOT_FOUND));
 
         if (!scenario.getMember().getId().equals(memberId)) {
@@ -93,7 +95,7 @@ public class ScenarioCommandServiceImpl implements ScenarioCommandService {
         }
 
         List<ScenarioLevel> scenarioLevels =
-                scenarioLevelRepository.findAllByScenarioIdOrderByLevelNoAsc(scenarioId);
+                scenarioLevelRepository.findAllByScenarioIdAndDeletedAtIsNullOrderByLevelNoAsc(scenarioId);
 
         Map<Integer, List<ScenarioStep>> stepsByLevelNo =
                 loadStepsByLevelNo(scenarioLevels);
@@ -155,6 +157,28 @@ public class ScenarioCommandServiceImpl implements ScenarioCommandService {
         );
     }
 
+    @Override
+    public ScenarioDeleteResDTO deleteScenario(Long scenarioId) {
+        Long memberId = SecurityUtil.getCurrentMemberId();
+
+        Scenario scenario = scenarioRepository.findByIdAndDeletedAtIsNull(scenarioId)
+                .orElseThrow(() -> new CustomException(ScenarioErrorCode.SCENARIO_NOT_FOUND));
+
+        if (!scenario.getMember().getId().equals(memberId)) {
+            throw new CustomException(ScenarioErrorCode.SCENARIO_FORBIDDEN);
+        }
+
+        LocalDateTime deletedAt = LocalDateTime.now();
+
+        scenarioAnalysisResultRepository.softDeleteAllByScenarioId(scenarioId, deletedAt);
+        scenarioStepRepository.softDeleteAllByScenarioId(scenarioId, deletedAt);
+        scenarioLevelRepository.softDeleteAllByScenarioId(scenarioId, deletedAt);
+        scenario.softDelete();
+        scenarioRepository.save(scenario);
+
+        return new ScenarioDeleteResDTO(scenario.getId());
+    }
+
     private void validateCreateRequest(ScenarioCreateReqDTO request) {
         if (request.getTitle() == null || request.getTitle().trim().isEmpty()) {
             throw new CustomException(ScenarioErrorCode.EMPTY_SCENARIO_TITLE);
@@ -184,7 +208,7 @@ public class ScenarioCommandServiceImpl implements ScenarioCommandService {
                 .collect(Collectors.toMap(
                         ScenarioLevel::getLevelNo,
                         scenarioLevel -> scenarioStepRepository
-                                .findAllByScenarioLevelIdOrderByStepNoAsc(scenarioLevel.getId())
+                                .findAllByScenarioLevelIdAndDeletedAtIsNullOrderByStepNoAsc(scenarioLevel.getId())
                 ));
     }
 

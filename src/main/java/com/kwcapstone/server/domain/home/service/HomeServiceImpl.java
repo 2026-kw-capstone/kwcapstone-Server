@@ -73,7 +73,7 @@ public class HomeServiceImpl implements HomeService {
 
         List<ContinueLearningResDTO.Content> contents = new ArrayList<>();
 
-        scenarioAnalysisResultRepository.findTopByMemberIdOrderByCreatedAtDesc(memberId)
+        scenarioAnalysisResultRepository.findTopByMemberIdAndDeletedAtIsNullOrderByCreatedAtDesc(memberId)
                 .map(HomeConverter::toScenarioContent)
                 .ifPresent(contents::add);
 
@@ -115,7 +115,7 @@ public class HomeServiceImpl implements HomeService {
                         endAt
                 );
         long scenarioCount = scenarioAnalysisResultRepository
-                .countByMemberIdAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(
+                .countByMemberIdAndDeletedAtIsNullAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(
                         memberId,
                         startAt,
                         endAt

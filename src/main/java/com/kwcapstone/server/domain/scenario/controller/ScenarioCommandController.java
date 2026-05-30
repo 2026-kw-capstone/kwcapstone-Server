@@ -2,6 +2,7 @@ package com.kwcapstone.server.domain.scenario.controller;
 
 import com.kwcapstone.server.domain.scenario.dto.request.ScenarioCreateReqDTO;
 import com.kwcapstone.server.domain.scenario.dto.response.ScenarioCreateResDTO;
+import com.kwcapstone.server.domain.scenario.dto.response.ScenarioDeleteResDTO;
 import com.kwcapstone.server.domain.scenario.dto.response.ScenarioRegenerateResDTO;
 import com.kwcapstone.server.domain.scenario.service.ScenarioCommandService;
 import com.kwcapstone.server.global.apiPayload.response.ApiResponse;
@@ -36,6 +37,17 @@ public class ScenarioCommandController {
     ) {
         ScenarioRegenerateResDTO result =
                 scenarioCommandService.regenerateScenarioStep(scenarioId, level, stepNo);
+
+        return ApiResponse.onSuccess(result, SuccessCode.OK);
+    }
+
+    @Operation(summary = "시나리오 삭제")
+    @DeleteMapping("/{scenarioId}")
+    public ApiResponse<ScenarioDeleteResDTO> deleteScenario(
+            @PathVariable Long scenarioId
+    ) {
+        ScenarioDeleteResDTO result =
+                scenarioCommandService.deleteScenario(scenarioId);
 
         return ApiResponse.onSuccess(result, SuccessCode.OK);
     }

@@ -4,7 +4,9 @@ import com.kwcapstone.server.domain.scenario.entity.Scenario;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface ScenarioRepository extends JpaRepository<Scenario, Long> {
-    List<Scenario> findAllByMemberIdOrderByCreatedAtDesc(Long memberId);
+    List<Scenario> findAllByMemberIdAndDeletedAtIsNullOrderByCreatedAtDesc(Long memberId);
+    Optional<Scenario> findByIdAndDeletedAtIsNull(Long scenarioId);
 }
