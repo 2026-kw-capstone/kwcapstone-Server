@@ -61,7 +61,7 @@ public class ScenarioAudioServiceImpl implements ScenarioAudioService {
         // 중복 요청 확인
         ScenarioAnalysisResult duplicated =
                 scenarioAnalysisResultRepository
-                        .findByMemberIdAndClientRequestId(
+                        .findByMemberIdAndClientRequestIdAndDeletedAtIsNull(
                                 memberId,
                                 request.getClientRequestId()
                         )
@@ -74,7 +74,7 @@ public class ScenarioAudioServiceImpl implements ScenarioAudioService {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new CustomException(ErrorCode.UNAUTHORIZED));
 
-        Scenario scenario = scenarioRepository.findById(request.getScenarioId())
+        Scenario scenario = scenarioRepository.findByIdAndDeletedAtIsNull(request.getScenarioId())
                 .orElseThrow(() -> new CustomException(ScenarioErrorCode.SCENARIO_NOT_FOUND));
 
         if (!scenario.getMember().getId().equals(memberId)) {
@@ -82,14 +82,14 @@ public class ScenarioAudioServiceImpl implements ScenarioAudioService {
         }
 
         ScenarioLevel scenarioLevel = scenarioLevelRepository
-                .findByScenarioIdAndLevelNo(
+                .findByScenarioIdAndLevelNoAndDeletedAtIsNull(
                         request.getScenarioId(),
                         request.getLevel()
                 )
                 .orElseThrow(() -> new CustomException(ScenarioErrorCode.SCENARIO_STEP_NOT_FOUND));
 
         ScenarioStep scenarioStep = scenarioStepRepository
-                .findByScenarioLevelIdAndStepNo(
+                .findByScenarioLevelIdAndStepNoAndDeletedAtIsNull(
                         scenarioLevel.getId(),
                         request.getStepNo()
                 )
@@ -169,7 +169,7 @@ public class ScenarioAudioServiceImpl implements ScenarioAudioService {
 
         Long memberId = SecurityUtil.getCurrentMemberId();
 
-        Scenario scenario = scenarioRepository.findById(scenarioId)
+        Scenario scenario = scenarioRepository.findByIdAndDeletedAtIsNull(scenarioId)
                 .orElseThrow(() -> new CustomException(ScenarioErrorCode.SCENARIO_NOT_FOUND));
 
         if (!scenario.getMember().getId().equals(memberId)) {
@@ -177,15 +177,15 @@ public class ScenarioAudioServiceImpl implements ScenarioAudioService {
         }
 
         ScenarioLevel scenarioLevel = scenarioLevelRepository
-                .findByScenarioIdAndLevelNo(scenarioId, level)
+                .findByScenarioIdAndLevelNoAndDeletedAtIsNull(scenarioId, level)
                 .orElseThrow(() -> new CustomException(ScenarioErrorCode.SCENARIO_STEP_NOT_FOUND));
 
         ScenarioStep scenarioStep = scenarioStepRepository
-                .findByScenarioLevelIdAndStepNo(scenarioLevel.getId(), stepNo)
+                .findByScenarioLevelIdAndStepNoAndDeletedAtIsNull(scenarioLevel.getId(), stepNo)
                 .orElseThrow(() -> new CustomException(ScenarioErrorCode.SCENARIO_STEP_NOT_FOUND));
 
         ScenarioAnalysisResult analysisResult = scenarioAnalysisResultRepository
-                .findTopByScenarioStepIdAndMemberIdOrderByCreatedAtDesc(
+                .findTopByScenarioStepIdAndMemberIdAndDeletedAtIsNullOrderByCreatedAtDesc(
                         scenarioStep.getId(),
                         memberId
                 )

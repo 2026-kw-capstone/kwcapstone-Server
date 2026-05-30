@@ -98,7 +98,7 @@ public class ReportServiceImpl implements ReportService {
                     );
 
             long scenarioCount = scenarioAnalysisResultRepository
-                    .countByMemberIdAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(
+                    .countByMemberIdAndDeletedAtIsNullAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(
                             memberId,
                             start,
                             end
@@ -287,7 +287,7 @@ public class ReportServiceImpl implements ReportService {
                 );
 
         long scenarioCount = scenarioAnalysisResultRepository
-                .countByMemberIdAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(
+                .countByMemberIdAndDeletedAtIsNullAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(
                         memberId,
                         start,
                         end

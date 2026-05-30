@@ -12,16 +12,17 @@ import java.util.Collection;
 import java.util.Optional;
 
 public interface ScenarioAnalysisResultRepository extends JpaRepository<ScenarioAnalysisResult, Long> {
-    boolean existsByScenarioStepIdAndMemberId(Long scenarioStepId, Long memberId);
-    Optional<ScenarioAnalysisResult> findTopByScenarioStepIdAndMemberIdOrderByCreatedAtDesc(Long scenarioStepId, Long memberId);
-    Optional<ScenarioAnalysisResult> findTopByMemberIdOrderByCreatedAtDesc(Long memberId);
-    Optional<ScenarioAnalysisResult> findByMemberIdAndClientRequestId(Long memberId, String clientRequestId);
-    long countByMemberIdAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(Long memberId, LocalDateTime startAt, LocalDateTime endAt);
+    boolean existsByScenarioStepIdAndMemberIdAndDeletedAtIsNull(Long scenarioStepId, Long memberId);
+    Optional<ScenarioAnalysisResult> findTopByScenarioStepIdAndMemberIdAndDeletedAtIsNullOrderByCreatedAtDesc(Long scenarioStepId, Long memberId);
+    Optional<ScenarioAnalysisResult> findTopByMemberIdAndDeletedAtIsNullOrderByCreatedAtDesc(Long memberId);
+    Optional<ScenarioAnalysisResult> findByMemberIdAndClientRequestIdAndDeletedAtIsNull(Long memberId, String clientRequestId);
+    long countByMemberIdAndDeletedAtIsNullAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(Long memberId, LocalDateTime startAt, LocalDateTime endAt);
 
     @Query("""
             select sum(result.pronunciationScore)
             from ScenarioAnalysisResult result
             where result.member.id = :memberId
+            and result.deletedAt is null
             and result.createdAt >= :startAt
             and result.createdAt < :endAt
             """)
@@ -35,6 +36,7 @@ public interface ScenarioAnalysisResultRepository extends JpaRepository<Scenario
             select sum(result.meaningDeliveryScore)
             from ScenarioAnalysisResult result
             where result.member.id = :memberId
+            and result.deletedAt is null
             and result.createdAt >= :startAt
             and result.createdAt < :endAt
             """)
@@ -48,6 +50,7 @@ public interface ScenarioAnalysisResultRepository extends JpaRepository<Scenario
         select avg(result.pronunciationScore)
         from ScenarioAnalysisResult result
         where result.member.id = :memberId
+            and result.deletedAt is null
             and result.createdAt >= :start
             and result.createdAt < :end
     """)
@@ -61,6 +64,7 @@ public interface ScenarioAnalysisResultRepository extends JpaRepository<Scenario
         select coalesce(sum(result.pronunciationScore), 0)
         from ScenarioAnalysisResult result
         where result.member.id = :memberId
+            and result.deletedAt is null
             and result.createdAt >= :start
             and result.createdAt < :end
     """)
@@ -74,6 +78,7 @@ public interface ScenarioAnalysisResultRepository extends JpaRepository<Scenario
         select avg(result.meaningDeliveryScore)
         from ScenarioAnalysisResult result
         where result.member.id = :memberId
+            and result.deletedAt is null
             and result.createdAt >= :start
             and result.createdAt < :end
     """)
@@ -92,5 +97,25 @@ public interface ScenarioAnalysisResultRepository extends JpaRepository<Scenario
     void deleteAllByMemberIdAndScenarioStepIdIn(
             @Param("memberId") Long memberId,
             @Param("scenarioStepIds") Collection<Long> scenarioStepIds
+    );
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("""
+            update ScenarioAnalysisResult result
+            set result.deletedAt = :deletedAt
+            where result.scenarioStep.id in (
+                select step.id
+                from ScenarioStep step
+                where step.scenarioLevel.id in (
+                    select level.id
+                    from ScenarioLevel level
+                    where level.scenario.id = :scenarioId
+                )
+            )
+            and result.deletedAt is null
+            """)
+    void softDeleteAllByScenarioId(
+            @Param("scenarioId") Long scenarioId,
+            @Param("deletedAt") LocalDateTime deletedAt
     );
 }
