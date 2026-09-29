@@ -13,4 +13,5 @@ public interface AudioStorageService {
     boolean exists(String key);
     String uploadBytes(String key, byte[] bytes, String contentType);
     PresignedUploadUrlResult generatePresignedPutUrl(String keyPrefix, String fileBaseName, String originalFileName, String contentType, long fileSize);
+    StoredAudioObjectMetadata getObjectMetadata(String key);
 }

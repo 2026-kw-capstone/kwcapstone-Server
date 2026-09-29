@@ -303,6 +303,66 @@ public class S3AudioStorageService implements AudioStorageService {
         }
     }
 
+    @Override
+    public StoredAudioObjectMetadata getObjectMetadata(String key) {
+        if (key == null || key.isBlank()) {
+            throw new CustomException(ErrorCode.INVALID_REQUEST);
+        }
+
+        try {
+            HeadObjectRequest request = HeadObjectRequest.builder()
+                    .bucket(bucket)
+                    .key(key)
+                    .build();
+
+            HeadObjectResponse response = s3Client.headObject(request);
+
+            log.info(
+                    "S3 object metadata lookup success. bucket={}, key={}, contentLength={}, contentType={}",
+                    bucket,
+                    key,
+                    response.contentLength(),
+                    response.contentType()
+            );
+
+            return new StoredAudioObjectMetadata(
+                    key,
+                    response.contentLength(),
+                    response.contentType()
+            );
+
+        } catch (S3Exception e) {
+
+            if (e.statusCode() == 404) {
+                throw new CustomException(ErrorCode.NOT_FOUND);
+            }
+
+            log.error(
+                    "S3Exception during metadata lookup. bucket={}, key={}, statusCode={}, errorCode={}, errorMessage={}",
+                    bucket,
+                    key,
+                    e.statusCode(),
+                    e.awsErrorDetails() != null ? e.awsErrorDetails().errorCode() : null,
+                    e.awsErrorDetails() != null ? e.awsErrorDetails().errorMessage() : e.getMessage(),
+                    e
+            );
+
+            throw new CustomException(ErrorCode.FILE_UPLOAD_FAILED);
+
+        } catch (SdkClientException e) {
+
+            log.error(
+                    "SdkClientException during metadata lookup. bucket={}, key={}, message={}",
+                    bucket,
+                    key,
+                    e.getMessage(),
+                    e
+            );
+
+            throw new CustomException(ErrorCode.FILE_UPLOAD_FAILED);
+        }
+    }
+
     // 모범 음성 최초 업로드용 메서드
     @Override
     public String uploadBytes(String key, byte[] bytes, String contentType) {

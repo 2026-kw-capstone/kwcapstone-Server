@@ -1,6 +1,8 @@
 package com.kwcapstone.server.domain.audio.controller;
 
+import com.kwcapstone.server.domain.audio.dto.request.CompleteAudioUploadReqDTO;
 import com.kwcapstone.server.domain.audio.dto.request.PresignedUploadReqDTO;
+import com.kwcapstone.server.domain.audio.dto.response.CompleteAudioUploadResDTO;
 import com.kwcapstone.server.domain.audio.dto.response.PresignedUploadResDTO;
 import com.kwcapstone.server.domain.audio.service.AudioUploadService;
 import com.kwcapstone.server.global.apiPayload.response.ApiResponse;
@@ -29,5 +31,17 @@ public class AudioUploadController {
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(ApiResponse.onSuccess(result, SuccessCode.CREATED));
+    }
+
+    @Operation(summary = "S3 음성 파일 직접 업로드 완료 검증")
+    @PostMapping("/complete")
+    public ResponseEntity<ApiResponse<CompleteAudioUploadResDTO>> completeUpload(
+            @RequestBody @Valid CompleteAudioUploadReqDTO request
+    ) {
+        CompleteAudioUploadResDTO result = audioUploadService.completeUpload(request);
+
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(ApiResponse.onSuccess(result, SuccessCode.OK));
     }
 }
