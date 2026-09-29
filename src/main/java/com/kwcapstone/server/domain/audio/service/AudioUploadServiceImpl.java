@@ -3,6 +3,7 @@ package com.kwcapstone.server.domain.audio.service;
 import com.kwcapstone.server.domain.audio.dto.request.CompleteAudioUploadReqDTO;
 import com.kwcapstone.server.domain.audio.dto.request.PresignedUploadReqDTO;
 import com.kwcapstone.server.domain.audio.dto.response.CompleteAudioUploadResDTO;
+import com.kwcapstone.server.domain.audio.dto.response.LegacyUploadBenchmarkResDTO;
 import com.kwcapstone.server.domain.audio.dto.response.PresignedUploadResDTO;
 import com.kwcapstone.server.global.apiPayload.exception.CustomException;
 import com.kwcapstone.server.global.apiPayload.response.ErrorCode;
@@ -13,6 +14,7 @@ import com.kwcapstone.server.global.storage.audio.PresignedUploadUrlResult;
 import com.kwcapstone.server.global.storage.audio.StoredAudioObjectMetadata;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.UUID;
 
@@ -85,6 +87,27 @@ public class AudioUploadServiceImpl implements AudioUploadService {
                 metadata.key(),
                 metadata.contentLength(),
                 metadata.contentType()
+        );
+    }
+
+    @Override
+    public LegacyUploadBenchmarkResDTO uploadLegacyForBenchmark(MultipartFile file) {
+        Long memberId = SecurityUtil.getCurrentMemberId();
+
+        String keyPrefix = "benchmark/legacy/member/" + memberId;
+
+        String fileBaseName = UUID.randomUUID().toString();
+
+        String key = audioStorageService.upload(
+                keyPrefix,
+                fileBaseName,
+                file
+        );
+
+        return new LegacyUploadBenchmarkResDTO(
+                key,
+                file.getSize(),
+                file.getContentType()
         );
     }
 }

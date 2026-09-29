@@ -3,6 +3,7 @@ package com.kwcapstone.server.domain.audio.controller;
 import com.kwcapstone.server.domain.audio.dto.request.CompleteAudioUploadReqDTO;
 import com.kwcapstone.server.domain.audio.dto.request.PresignedUploadReqDTO;
 import com.kwcapstone.server.domain.audio.dto.response.CompleteAudioUploadResDTO;
+import com.kwcapstone.server.domain.audio.dto.response.LegacyUploadBenchmarkResDTO;
 import com.kwcapstone.server.domain.audio.dto.response.PresignedUploadResDTO;
 import com.kwcapstone.server.domain.audio.service.AudioUploadService;
 import com.kwcapstone.server.global.apiPayload.response.ApiResponse;
@@ -11,8 +12,10 @@ import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequiredArgsConstructor
@@ -43,5 +46,23 @@ public class AudioUploadController {
         return ResponseEntity
                 .status(HttpStatus.OK)
                 .body(ApiResponse.onSuccess(result, SuccessCode.OK));
+    }
+
+    @Operation(
+            summary = "성능 비교용 기존 서버 경유 음성 파일 업로드",
+            description = "Presigned PUT 방식과 성능을 비교하기 위한 Benchmark API입니다."
+    )
+    @PostMapping(
+            value = "/benchmark/legacy",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    )
+    public ResponseEntity<ApiResponse<LegacyUploadBenchmarkResDTO>> uploadLegacyForBenchmark(
+            @RequestPart("file") MultipartFile file
+    ) {
+        LegacyUploadBenchmarkResDTO result = audioUploadService.uploadLegacyForBenchmark(file);
+
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(ApiResponse.onSuccess(result, SuccessCode.CREATED));
     }
 }
