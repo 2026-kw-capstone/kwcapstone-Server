@@ -13,6 +13,7 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.*;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
+import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -87,6 +88,78 @@ public class S3AudioStorageService implements AudioStorageService {
         } catch (IOException e) {
             log.error("IOException during upload. bucket={}, key={}, message={}",
                     bucket, key, e.getMessage(), e);
+
+            throw new CustomException(ErrorCode.FILE_UPLOAD_FAILED);
+        }
+    }
+
+    @Override
+    public PresignedUploadUrlResult generatePresignedPutUrl(
+            String keyPrefix,
+            String fileBaseName,
+            String originalFileName,
+            String contentType,
+            long fileSize
+    ) {
+        // 파일 자체를 받지 않으므로 메타데이터 기준으로 검증
+        audioFilePolicy.validate(originalFileName, contentType, fileSize);
+
+        // ex) audio/webm;codecs=opus -> audio/webm
+        String normalizedContentType = audioFilePolicy.normalizeContentType(contentType);
+
+        // 저장할 확장자 결정
+        String extension = audioFilePolicy.resolveExtension(originalFileName, normalizedContentType);
+
+        // 기존과 동일한 규칙으로 S3 Object Key 생성
+        String key = buildKey(keyPrefix, fileBaseName, extension);
+
+        log.info(
+                "Presigned PUT URL generation start. bucket={}, key={}, originalFilename={}, contentType={}, normalizedContentType={}, size={}",
+                bucket,
+                key,
+                originalFileName,
+                contentType,
+                normalizedContentType,
+                fileSize
+        );
+
+        try {
+            PutObjectRequest putObjectRequest = PutObjectRequest.builder()
+                    .bucket(bucket)
+                    .key(key)
+                    .contentType(normalizedContentType)
+                    .build();
+
+            PutObjectPresignRequest presignRequest = PutObjectPresignRequest.builder()
+                    .signatureDuration(Duration.ofSeconds(presignedExpireSeconds))
+                    .putObjectRequest(putObjectRequest)
+                    .build();
+
+            String uploadUrl = s3Presigner.presignPutObject(presignRequest)
+                    .url()
+                    .toString();
+
+            log.info(
+                    "Presigned PUT URL generation success. bucket={}, key={}",
+                    bucket,
+                    key
+            );
+
+            return new PresignedUploadUrlResult(
+                    key,
+                    uploadUrl,
+                    normalizedContentType,
+                    presignedExpireSeconds
+            );
+
+        } catch (S3Exception | SdkClientException e) {
+            log.error(
+                    "Failed to generate Presigned PUT URL. bucket={}, key={}, message={}",
+                    bucket,
+                    key,
+                    e.getMessage(),
+                    e
+            );
 
             throw new CustomException(ErrorCode.FILE_UPLOAD_FAILED);
         }

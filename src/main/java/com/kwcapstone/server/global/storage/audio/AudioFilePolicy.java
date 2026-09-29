@@ -27,6 +27,8 @@ public class AudioFilePolicy {
             ".mp3"
     );
 
+    private static final long MAX_AUDIO_FILE_SIZE_BYTES = 20L * 1024 * 1024;
+
     // 파일 검증 메서드
     public void validate(MultipartFile file) {
         if (file == null || file.isEmpty()) {
@@ -37,6 +39,28 @@ public class AudioFilePolicy {
         String normalizedContentType = normalizeContentType(file.getContentType());
         // 확장자 추출
         String extension = extractExtension(file.getOriginalFilename());
+
+        boolean allowedContentType = normalizedContentType != null && ALLOWED_CONTENT_TYPES.contains(normalizedContentType);
+        boolean allowedExtension = extension != null && ALLOWED_EXTENSIONS.contains(extension);
+
+        if (!allowedContentType && !allowedExtension) {
+            throw new CustomException(ErrorCode.INVALID_AUDIO_FILE);
+        }
+    }
+
+    public void validate(String originalFileName, String contentType, long fileSize) {
+        if (fileSize <= 0) {
+            throw new CustomException(ErrorCode.EMPTY_FILE);
+        }
+
+        if (fileSize > MAX_AUDIO_FILE_SIZE_BYTES) {
+            throw new CustomException(ErrorCode.INVALID_REQUEST);
+        }
+
+        // Content-Type 정규화
+        String normalizedContentType = normalizeContentType(contentType);
+        // 확장자 추출
+        String extension = extractExtension(originalFileName);
 
         boolean allowedContentType = normalizedContentType != null && ALLOWED_CONTENT_TYPES.contains(normalizedContentType);
         boolean allowedExtension = extension != null && ALLOWED_EXTENSIONS.contains(extension);
@@ -68,6 +92,19 @@ public class AudioFilePolicy {
 
         // 2순위: 파일명 확장자
         return resolveExtensionFromFilename(file.getOriginalFilename());
+    }
+
+    public String resolveExtension(String originalFileName, String normalizedContentType) {
+        if (normalizedContentType != null) {
+            return switch (normalizedContentType) {
+                case "audio/webm", "video/webm" -> ".webm";
+                case "audio/mp4", "audio/m4a", "audio/x-m4a" -> ".m4a";
+                case "audio/mpeg", "audio/mp3" -> ".mp3";
+                default -> resolveExtensionFromFilename(originalFileName);
+            };
+        }
+
+        return resolveExtensionFromFilename(originalFileName);
     }
 
     private String resolveExtensionFromFilename(String originalFilename) {
