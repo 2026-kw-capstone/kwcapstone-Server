@@ -70,6 +70,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/reports/**").authenticated()
                         .requestMatchers("/api/mypage/**").authenticated()
                         .requestMatchers("/api/home/**").authenticated()
+                        .requestMatchers("/api/audio/**").authenticated()
 
                         // 나머지
                         .anyRequest().permitAll()
