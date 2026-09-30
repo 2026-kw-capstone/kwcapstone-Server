@@ -42,3 +42,7 @@ test.m4a
 
 ### Codex ###
 AI_GUIDE.md
+
+### k6 ###
+k6/fixtures/
+k6/results/
