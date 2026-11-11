@@ -13,7 +13,7 @@ public class WeeklyStampsReportResDTO {
     private LocalDate weekEndDate;
 
     private Long totalStudyDays;
-    private Long totalStydyCount;
+    private Long totalStudyCount;
 
     private List<Stamp> stamps;
 

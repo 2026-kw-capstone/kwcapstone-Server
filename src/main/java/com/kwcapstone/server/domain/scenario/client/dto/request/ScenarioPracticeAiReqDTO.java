@@ -6,6 +6,7 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public class ScenarioPracticeAiReqDTO {
+    private String learnerKey;
     private String s3Url;
     private String levelTitle;
     private String step;

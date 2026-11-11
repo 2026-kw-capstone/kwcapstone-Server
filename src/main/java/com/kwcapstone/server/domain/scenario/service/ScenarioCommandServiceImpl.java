@@ -60,6 +60,7 @@ public class ScenarioCommandServiceImpl implements ScenarioCommandService {
 
         ScenarioGenerateAiResDTO aiResponse = scenarioAiClient.generateScenario(
                 new ScenarioGenerateAiReqDTO(
+                        String.valueOf(memberId),
                         request.getTitle().trim(),
                         request.getDescription().trim()
                 )
@@ -254,6 +255,7 @@ public class ScenarioCommandServiceImpl implements ScenarioCommandService {
                 .toList();
 
         return new ScenarioRegenerateAiReqDTO(
+                String.valueOf(scenario.getMember().getId()),
                 scenario.getScenarioContext(),
                 scenario.getGoal(),
                 levels,
