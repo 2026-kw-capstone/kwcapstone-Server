@@ -9,6 +9,7 @@ import java.util.List;
 @AllArgsConstructor
 public class ScenarioRegenerateAiReqDTO {
 
+    private String learnerKey;
     private String scenarioContext;
     private String goal;
     private List<Level> levels;

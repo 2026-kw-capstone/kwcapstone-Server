@@ -109,6 +109,7 @@ public class ScenarioAudioServiceImpl implements ScenarioAudioService {
             ScenarioPracticeAiResDTO aiResponse =
                     scenarioAiClient.practiceScenario(
                             new ScenarioPracticeAiReqDTO(
+                                    String.valueOf(memberId),
                                     memberVoiceUrlForAi,
                                     scenarioLevel.getLevelTitle(),
                                     scenarioStep.getStepName(),
